@@ -2,9 +2,9 @@
 
 #include <thread>
 #include <functional>
-#include "WSDC/Window.hpp"
-#include "WSDC/Events.hpp"
-#include "WSDC/SceneManager.hpp"
+#include "Window.hpp"
+#include "Events.hpp"
+#include "SceneManager.hpp"
 
 namespace WSDC {
 

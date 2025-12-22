@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL_video.h>
 
-#include "WSDC/Core/Size.hpp"
+#include "Size.hpp"
 
 namespace WSDC {
 

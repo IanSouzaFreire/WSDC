@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WSDC/Draw/Image.hpp"
-#include "WSDC/Core/Position.hpp"
+#include "Image.hpp"
+#include "../Core/Position.hpp"
 
 namespace WSDC {
 

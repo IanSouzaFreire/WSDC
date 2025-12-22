@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <tuple>
 
-#include "WSDC/SceneManager/Scene.hpp"
+#include "SceneManager/Scene.hpp"
 
 namespace WSDC {
 

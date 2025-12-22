@@ -3,8 +3,8 @@
 #include <SDL3/SDL_video.h>
 #include <functional>
 
-#include "WSDC/Events.hpp"
-#include "WSDC/Window.hpp"
+#include "../Events.hpp"
+#include "../Window.hpp"
 
 namespace WSDC {
 

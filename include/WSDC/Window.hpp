@@ -3,10 +3,10 @@
 #include <stdexcept>
 #include <string>
 
-#include "WSDC/Core/Utils.hpp"
-#include "WSDC/Window/RawWindow.hpp"
-#include "WSDC/Core/Color.hpp"
-#include "WSDC/Draw/Image.hpp"
+#include "Core/Utils.hpp"
+#include "Window/RawWindow.hpp"
+#include "Core/Color.hpp"
+#include "Draw/Image.hpp"
 
 namespace WSDC {
 
