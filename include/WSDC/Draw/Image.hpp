@@ -35,9 +35,6 @@ public:
     // Load image from file
     bool load(const std::string&);
 
-    // Load SVG with specific dimensions
-    bool loadSVG(const std::string&, int, int);
-
     // Free the surface
     void free();
 
@@ -160,14 +157,8 @@ bool Image::load(const std::string& filename) {
         return false;
     }
 
-    // Load based on extension
-    if (extension == "svg") {
-        // SVG requires special handling with size specification
-        surface = IMG_Load(filepath.c_str());
-    } else {
-        // Standard image loading for all other formats
-        surface = IMG_Load(filepath.c_str());
-    }
+    
+    surface = IMG_Load(filepath.c_str());
 
     if (!surface) {
         SDL_Log("Failed to load image %s: %s", filepath.c_str(), SDL_GetError());
@@ -175,37 +166,6 @@ bool Image::load(const std::string& filename) {
     }
 
     // Extract dimensions
-    width = surface->w;
-    height = surface->h;
-    loaded = true;
-
-    return true;
-}
-
-bool Image::loadSVG(const std::string& filename, int w, int h) {
-    free();
-    
-    filepath = getFullPath(filename);
-    extension = getExtension(filepath);
-    
-    if (extension != "svg") {
-        SDL_Log("Error: loadSVG only works with SVG files");
-        return false;
-    }
-
-    SDL_IOStream* io = SDL_IOFromFile(filepath.c_str(), "rb");
-    if (!io) {
-        SDL_Log("Failed to open SVG file %s: %s", filepath.c_str(), SDL_GetError());
-        return false;
-    }
-
-    surface = IMG_LoadSizedSVG_IO(io, w, h);
-    
-    if (!surface) {
-        SDL_Log("Failed to load SVG %s: %s", filepath.c_str(), SDL_GetError());
-        return false;
-    }
-
     width = surface->w;
     height = surface->h;
     loaded = true;
