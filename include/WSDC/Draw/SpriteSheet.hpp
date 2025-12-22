@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Image.hpp"
-#include "Core/Position.hpp"
+#include "../Core/Position.hpp"
 
 class SpriteSheet {
     Image sprite_sheet;

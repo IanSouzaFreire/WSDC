@@ -3,8 +3,8 @@
 #include <SDL3/SDL_video.h>
 #include <functional>
 
-#include "Events.hpp"
-#include "Window.hpp"
+#include "../Events.hpp"
+#include "../Window.hpp"
 
 template <class... Others>
 class Scene {
