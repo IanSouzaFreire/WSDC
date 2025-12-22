@@ -1,5 +1,9 @@
 #pragma once
 
+namespace WSDC {
+
+namespace Core {
+
 template <typename T=int>
 struct Position {
     T x, y, &horizontal=this->x, &vertical=this->y;
@@ -13,3 +17,7 @@ Position<T> Position<T>::operator=(const Position<T>& p) noexcept {
     vertical = p.y;
     return *this;
 }
+
+} // Core
+
+} // WSDC

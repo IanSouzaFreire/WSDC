@@ -3,9 +3,14 @@
 #include <stdexcept>
 #include <string>
 
-#include "Window/RawWindow.hpp"
-#include "Core/Color.hpp"
-#include "Draw/Image.hpp"
+#include "WSDC/Core/Utils.hpp"
+#include "WSDC/Window/RawWindow.hpp"
+#include "WSDC/Core/Color.hpp"
+#include "WSDC/Draw/Image.hpp"
+
+namespace WSDC {
+
+namespace Display {
 
 struct Window {
     using self_t = Window&;
@@ -22,8 +27,9 @@ struct Window {
     self_t resizeable(const bool&);
 
     // configure without rebuilding
-    template <typename T> self_t position(const Position<T>&);
-    template <typename T> self_t size(const Size<T>&);
+    template <typename T> self_t position(const WSDC::Core::Position<T>&);
+    template <typename T> self_t size(const WSDC::Core::Size<T>&);
+    self_t size(const int&, const int&);
 
     // remount window with set configurations
     self_t build(void);
@@ -35,7 +41,7 @@ struct Window {
     self_t update(void);
     self_t setTitle(const char*);
     self_t setIcon(const char*);
-    template <class F, class... Args> self_t drawRaw(F&&, const Color&, Args...);
+    template <class F, class... Args> self_t drawRaw(F&&, const WSDC::Core::Color&, Args...);
     template <class F, class... Args> self_t renderRaw(F&&, Args...);
 };
 
@@ -77,15 +83,19 @@ Window::self_t Window::resizeable(const bool& b) {
 }
 
 template <typename T=int>
-Window::self_t Window::position(const Position<T>& pos) {
+Window::self_t Window::position(const WSDC::Core::Position<T>& pos) {
     raw.position = pos;
     return self;
 }
 
 template <typename T=int>
-Window::self_t Window::size(const Size<T>& siz) {
+Window::self_t Window::size(const WSDC::Core::Size<T>& siz) {
     raw.size = siz;
     return self;
+}
+
+Window::self_t Window::size(const int& ratio, const int& percentage) {
+    return self.size(WSDC::Core::Util::applyNativeMonitorTo<int>(ratio, percentage));
 }
 
 Window::self_t Window::build(void) {
@@ -132,13 +142,13 @@ Window::self_t Window::setTitle(const char* str) {
 }
 
 Window::self_t Window::setIcon(const char* path) {
-    Image img(path);
+    WSDC::Draw::Image img(path);
     SDL_SetWindowIcon(raw.window, img.getSurface());
     return *this;
 }
 
 template <class F, class... Args>
-Window::self_t Window::drawRaw(F&& dfun, const Color& c, Args... args) {
+Window::self_t Window::drawRaw(F&& dfun, const WSDC::Core::Color& c, Args... args) {
     SDL_SetRenderDrawColor(raw.renderer, c.r, c.g, c.b, c.a);
     dfun(raw.renderer, args...);
     return self;
@@ -149,3 +159,7 @@ Window::self_t Window::renderRaw(F&& dfun, Args... args) {
     dfun(raw.renderer, args...);
     return self;
 }
+
+} // Display
+
+} // WSDC

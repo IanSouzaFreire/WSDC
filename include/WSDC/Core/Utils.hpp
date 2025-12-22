@@ -1,11 +1,19 @@
 #pragma once
 
-#include "Size.hpp"
 #include <SDL3/SDL_video.h>
 
+#include "WSDC/Core/Size.hpp"
+
+namespace WSDC {
+
+namespace Core {
+
+namespace Util {
+
 template <typename T>
-Size<T> applyNativeMonitorTo(const float& ratio, const float& percentage, SDL_DisplayID id = 0) {
+WSDC::Core::Size<T> applyNativeMonitorTo(const float& ratio, const float& percentage, SDL_DisplayID id = 0) {
     const float p = percentage / 100.0f;
+    WSDC::Core::Size<T> ret;
 
     // Get the primary display if id is 0
     if (id == 0) {
@@ -16,8 +24,9 @@ Size<T> applyNativeMonitorTo(const float& ratio, const float& percentage, SDL_Di
             SDL_free(displays);
         } else {
             // Fallback to default values if no displays found
-            return { .w = static_cast<T>(800 * p * ratio), 
-                     .h = static_cast<T>(600 * p) };
+            ret.w = static_cast<T>(800 * p * ratio);
+            ret.h = static_cast<T>(600 * p);
+            return ret;
         }
     }
 
@@ -25,16 +34,25 @@ Size<T> applyNativeMonitorTo(const float& ratio, const float& percentage, SDL_Di
     
     if (!DM) {
         // Fallback to default values if display mode is unavailable
-        return { .w = static_cast<T>(800 * p * ratio), 
-                 .h = static_cast<T>(600 * p) };
+        ret.w = static_cast<T>(800 * p * ratio);
+        ret.h = static_cast<T>(600 * p);
+        return ret;
     }
 
     // adjust if monitor is vertical
     if (DM->h > DM->w) {
-        return { .w = static_cast<T>(DM->w * p), 
-                 .h = static_cast<T>(DM->h * p * ratio) };
+        ret.w = static_cast<T>(DM->w * p);
+        ret.h = static_cast<T>(DM->h * p * ratio);
+        return ret;
     } else {
-        return { .w = static_cast<T>(DM->w * p * ratio),
-                 .h = static_cast<T>(DM->h * p) };
+        ret.w = static_cast<T>(DM->w * p * ratio);
+        ret.h = static_cast<T>(DM->h * p);
+        return ret;
     }
 }
+
+} // Utils
+
+} // Core
+
+} // WSDC

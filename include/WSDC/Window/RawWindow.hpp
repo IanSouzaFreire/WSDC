@@ -4,15 +4,25 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
 
-#include "Core/Position.hpp"
-#include "Core/Size.hpp"
+#include "WSDC/Core/Position.hpp"
+#include "WSDC/Core/Size.hpp"
+
+namespace WSDC {
+
+namespace Display {
 
 struct RawWindow {
-    Size<int> size{};
-    Position<int> position{};
-    std::string title{};
+    WSDC::Core::Size<int> size;
+    WSDC::Core::Position<int> position;
+    std::string title;
     SDL_WindowFlags flags{SDL_WINDOW_HIGH_PIXEL_DENSITY};
-    SDL_Window* window{};
-    SDL_Renderer* renderer{};
-    SDL_AudioDeviceID audio_device{};
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    SDL_AudioDeviceID audio_device;
+
+    RawWindow() {}
 };
+
+} // Display
+
+} // WSDC

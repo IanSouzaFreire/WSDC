@@ -6,6 +6,10 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3_image/SDL_image.h>
 
+namespace WSDC {
+
+namespace Draw {
+
 class Image {
     const std::string base_path;
     SDL_Surface* surface;
@@ -391,3 +395,7 @@ void Image::unlock() {
         SDL_UnlockSurface(surface);
     }
 }
+
+} // Draw
+
+} // WSDC

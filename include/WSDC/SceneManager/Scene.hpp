@@ -3,12 +3,16 @@
 #include <SDL3/SDL_video.h>
 #include <functional>
 
-#include "Events.hpp"
-#include "Window.hpp"
+#include "WSDC/Events.hpp"
+#include "WSDC/Window.hpp"
+
+namespace WSDC {
+
+namespace Managers {
 
 template <class... Others>
 class Scene {
-    using scene_raw_t = std::function<void(Window&, Events&, Others&...)>;
+    using scene_raw_t = std::function<void(WSDC::Display::Window&, WSDC::Managers::Events&, Others&...)>;
     scene_raw_t scene;
 
 public:
@@ -27,7 +31,7 @@ public:
         return scene;
     }
 
-Scene& run(Window& w, Events& e, Others&... a) {
+Scene& run(WSDC::Display::Window& w, WSDC::Managers::Events& e, Others&... a) {
     scene(w, e, a...); // WEA!!!
     return *this;
 }
@@ -37,3 +41,7 @@ Scene& run(Window& w, Events& e, Others&... a) {
         return *this;
     }
 };
+
+} // Managers
+
+} // WSDC

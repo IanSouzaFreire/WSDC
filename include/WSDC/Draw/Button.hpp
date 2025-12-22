@@ -3,6 +3,10 @@
 #include <cmath>
 #include <SDL3/SDL_rect.h>
 
+namespace WSDC {
+
+namespace Draw {
+
 struct Button {
     float x, y, w, h;
     SDL_FRect _frect;
@@ -35,3 +39,7 @@ struct Button {
         return isAlignedHorizontal(sq) && isAlignedVertical(sq);
     }
 };
+
+} // Draw
+
+} // WSDC

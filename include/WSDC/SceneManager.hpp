@@ -5,20 +5,24 @@
 #include <stdexcept>
 #include <tuple>
 
-#include "SceneManager/Scene.hpp"
+#include "WSDC/SceneManager/Scene.hpp"
+
+namespace WSDC {
+
+namespace Managers {
 
 template <class Key=std::string, class... ExtraData>
 class SceneManager {
-    using sig_function_t = std::function<void(Window&, ExtraData&...)>;
-    using SceneW = Scene<ExtraData&...>;
+    using sig_function_t = std::function<void(WSDC::Display::Window&, ExtraData&...)>;
+    using SceneW = WSDC::Managers::Scene<ExtraData&...>;
     using ExtraDataTuple = std::tuple<ExtraData*...>;
 
     std::map<Key, SceneW> scenes;
     std::map<Key, sig_function_t> on_change;
 
     SceneW* current_scene;
-    Window* current_window;
-    Events* current_events;
+    WSDC::Display::Window* current_window;
+    WSDC::Managers::Events* current_events;
     ExtraDataTuple current_outdata;
 
 public:
@@ -32,8 +36,8 @@ public:
     SceneW& sceneWithSignal(const Key&, const bool&, const sig_function_t&);
     
     SceneManager<Key, ExtraData...>& extra(ExtraData&...);
-    SceneManager<Key, ExtraData...>& window(Window&);
-    SceneManager<Key, ExtraData...>& events(Events&);
+    SceneManager<Key, ExtraData...>& window(WSDC::Display::Window&);
+    SceneManager<Key, ExtraData...>& events(WSDC::Managers::Events&);
     
     void changeTo(const Key&);
     sig_function_t& onChangeTo(const Key&);
@@ -53,7 +57,7 @@ private:
 };
 
 template <class Key, class... ExtraData>
-Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createScene(const Key& key, const bool& _default) {
+WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createScene(const Key& key, const bool& _default) {
     if (scenes.find(key) != scenes.end()) {
         throw std::runtime_error("Scene already defined");
     }
@@ -66,7 +70,7 @@ Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createScene(const Key& ke
 }
 
 template <class Key, class... ExtraData>
-Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::scene(const Key& key) {
+WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::scene(const Key& key) {
     if (scenes.find(key) == scenes.end()) {
         throw std::runtime_error("Scene not found");
     }
@@ -75,7 +79,7 @@ Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::scene(const Key& key) {
 }
 
 template <class Key, class... ExtraData>
-Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createSceneWithSignal(const Key& key, const bool& _default, const sig_function_t& fn) {
+WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createSceneWithSignal(const Key& key, const bool& _default, const sig_function_t& fn) {
     this->createScene(key, false);
     this->onChangeTo(key) = fn;
 
@@ -85,7 +89,7 @@ Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createSceneWithSignal(con
 }
 
 template <class Key, class... ExtraData>
-Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::sceneWithSignal(const Key& key, const bool& _default, const sig_function_t& fn) {
+WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::sceneWithSignal(const Key& key, const bool& _default, const sig_function_t& fn) {
     this->onChangeTo(key) = fn;
 
     if (_default) this->changeTo(key);
@@ -101,14 +105,14 @@ SceneManager<Key, ExtraData...>& SceneManager<Key, ExtraData...>::extra(ExtraDat
 }
 
 template <class Key, class... ExtraData>
-SceneManager<Key, ExtraData...>& SceneManager<Key, ExtraData...>::window(Window& win) {
+SceneManager<Key, ExtraData...>& SceneManager<Key, ExtraData...>::window(WSDC::Display::Window& win) {
     current_window = &win;
 
     return *this;
 }
 
 template <class Key, class... ExtraData>
-SceneManager<Key, ExtraData...>& SceneManager<Key, ExtraData...>::events(Events& eve) {
+SceneManager<Key, ExtraData...>& SceneManager<Key, ExtraData...>::events(WSDC::Managers::Events& eve) {
     current_events = &eve;
 
     return *this;
@@ -130,7 +134,7 @@ void SceneManager<Key, ExtraData...>::changeTo(const Key& key) {
 }
 
 template <class Key, class... ExtraData>
-std::function<void(Window&, ExtraData&...)>& SceneManager<Key, ExtraData...>::onChangeTo(const Key& key) {
+std::function<void(WSDC::Display::Window&, ExtraData&...)>& SceneManager<Key, ExtraData...>::onChangeTo(const Key& key) {
     if (scenes.find(key) == scenes.end()) {
         throw std::runtime_error("Scene not defined");
     }
@@ -155,3 +159,7 @@ SceneManager<Key, ExtraData...>& SceneManager<Key, ExtraData...>::run() {
     callSceneRun(std::index_sequence_for<ExtraData...>{});
     return *this;
 }
+
+} // Managers
+
+} // WSDC

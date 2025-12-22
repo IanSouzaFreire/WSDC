@@ -5,6 +5,11 @@
 #include <vector>
 #include <SDL3/SDL_events.h>
 
+
+namespace WSDC {
+
+namespace Managers {
+
 struct Events {
     const bool *key_states;
     std::vector<Uint32> type;
@@ -415,3 +420,7 @@ struct Events {
     const std::vector<SDL_ClipboardEvent>& getClipboardEvent(void) const { return clipboard; }
     
 };
+
+} // Managers
+
+} // WSDC
