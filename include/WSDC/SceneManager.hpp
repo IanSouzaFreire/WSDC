@@ -31,8 +31,10 @@ public:
     ~SceneManager() {}
 
     SceneW& createScene(const Key&, const bool&);
+    SceneW& createScene(const Key&);
     SceneW& scene(const Key&);
     SceneW& createSceneWithSignal(const Key&, const bool&, const sig_function_t&);
+    SceneW& createSceneWithSignal(const Key&, const sig_function_t&);
     SceneW& sceneWithSignal(const Key&, const bool&, const sig_function_t&);
     
     SceneManager<Key, ExtraData...>& extra(ExtraData&...);
@@ -70,6 +72,11 @@ WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createSce
 }
 
 template <class Key, class... ExtraData>
+WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createScene(const Key& key) {
+    return this->createScene(key, false);
+}
+
+template <class Key, class... ExtraData>
 WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::scene(const Key& key) {
     if (scenes.find(key) == scenes.end()) {
         throw std::runtime_error("Scene not found");
@@ -86,6 +93,11 @@ WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createSce
     if (_default) this->changeTo(key);
 
     return this->scene(key);
+}
+
+template <class Key, class... ExtraData>
+WSDC::Managers::Scene<ExtraData&...>& SceneManager<Key, ExtraData...>::createSceneWithSignal(const Key& key, const sig_function_t& fn) {
+    return this->createSceneWithSignal(key, false, fn);
 }
 
 template <class Key, class... ExtraData>

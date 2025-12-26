@@ -29,7 +29,7 @@ struct Window {
     // configure without rebuilding
     template <typename T> self_t position(const WSDC::Core::Position<T>&);
     template <typename T> self_t size(const WSDC::Core::Size<T>&);
-    self_t size(const int&, const int&);
+    self_t size(const float&, const float&);
 
     // remount window with set configurations
     self_t build(void);
@@ -41,6 +41,7 @@ struct Window {
     self_t update(void);
     self_t setTitle(const char*);
     self_t setIcon(const char*);
+    self_t setVSync(const int&);
     template <class F, class... Args> self_t drawRaw(F&&, const WSDC::Core::Color&, Args...);
     template <class F, class... Args> self_t renderRaw(F&&, Args...);
 };
@@ -94,7 +95,7 @@ Window::self_t Window::size(const WSDC::Core::Size<T>& siz) {
     return self;
 }
 
-Window::self_t Window::size(const int& ratio, const int& percentage) {
+Window::self_t Window::size(const float& ratio, const float& percentage) {
     return self.size(WSDC::Core::Util::applyNativeMonitorTo<int>(ratio, percentage));
 }
 
@@ -144,6 +145,14 @@ Window::self_t Window::setTitle(const char* str) {
 Window::self_t Window::setIcon(const char* path) {
     WSDC::Draw::Image img(path);
     SDL_SetWindowIcon(raw.window, img.getSurface());
+    return *this;
+}
+
+Window::self_t Window::setVSync(const int& n) {
+    if (SDL_SetRenderVSync(raw.renderer, n) == false) {
+        throw std::runtime_error("Could not change vsync: " + std::string(SDL_GetError()));
+    }
+    
     return *this;
 }
 

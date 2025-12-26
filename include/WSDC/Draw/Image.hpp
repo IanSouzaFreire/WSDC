@@ -10,6 +10,26 @@ namespace WSDC {
 
 namespace Draw {
 
+struct TextureWrapper {
+    SDL_Texture* ref;
+
+    TextureWrapper(SDL_Texture* other) {
+        ref = other;
+    }
+
+    void destroy() {
+        SDL_DestroyTexture(ref);
+    }
+
+    ~TextureWrapper() {
+        destroy();
+    }
+
+    SDL_Texture* operator&(void) {
+        return ref;
+    }
+};
+
 class Image {
     const std::string base_path;
     SDL_Surface* surface;
@@ -42,10 +62,10 @@ public:
     SDL_Surface* getSurface() const;
 
     // Get as SDL_Texture (GPU memory) - requires renderer
-    SDL_Texture* getTexture(SDL_Renderer*) const;
+    TextureWrapper getTexture(SDL_Renderer*) const;
 
     // Load directly as texture (more efficient if you don't need the surface)
-    SDL_Texture* loadAsTexture(SDL_Renderer*, const std::string&);
+    TextureWrapper loadAsTexture(SDL_Renderer*, const std::string&);
 
     // Get scaled surface
     SDL_Surface* getScaledSurface(int, int, SDL_ScaleMode) const;
@@ -187,7 +207,7 @@ SDL_Surface* Image::getSurface() const {
     return surface;
 }
 
-SDL_Texture* Image::getTexture(SDL_Renderer* renderer) const {
+TextureWrapper Image::getTexture(SDL_Renderer* renderer) const {
     if (!loaded || !surface || !renderer) {
         return nullptr;
     }
@@ -197,10 +217,10 @@ SDL_Texture* Image::getTexture(SDL_Renderer* renderer) const {
         SDL_Log("Failed to create texture: %s", SDL_GetError());
     }
     
-    return texture;
+    return { texture } ;
 }
 
-SDL_Texture* Image::loadAsTexture(SDL_Renderer* renderer, const std::string& filename) {
+TextureWrapper Image::loadAsTexture(SDL_Renderer* renderer, const std::string& filename) {
     if (!renderer) return nullptr;
     
     std::string fullpath = getFullPath(filename);
@@ -219,7 +239,7 @@ SDL_Texture* Image::loadAsTexture(SDL_Renderer* renderer, const std::string& fil
     extension = getExtension(filepath);
     loaded = true;
     
-    return texture;
+    return { texture };
 }
 
 SDL_Surface* Image::getScaledSurface(int new_width, int new_height, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
