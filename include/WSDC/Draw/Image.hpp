@@ -25,14 +25,43 @@ struct TextureWrapper {
         destroy();
     }
 
-    SDL_Texture* operator&(void) {
+    SDL_Texture* operator&(void) noexcept {
         return ref;
+    }
+};
+
+
+struct SDL_SurfaceWrapper {
+    SDL_Surface* ref;
+
+    SDL_SurfaceWrapper(SDL_Surface* other) {
+        ref = other;
+    }
+
+    void destroy() {
+        SDL_DestroySurface(ref);
+    }
+
+    ~SDL_SurfaceWrapper() {
+        destroy();
+    }
+
+    SDL_Surface* operator&(void) noexcept {
+        return ref;
+    }
+
+    bool operator!(void) const noexcept {
+        return ref == nullptr;
+    }
+
+    bool okay(void) const noexcept {
+        return ref != nullptr;
     }
 };
 
 class Image {
     const std::string base_path;
-    SDL_Surface* surface;
+    SDL_SurfaceWrapper surface;
     std::string filepath;
     std::string extension;
     int width;
@@ -48,6 +77,8 @@ class Image {
 public:
     Image();
 
+    Image(SDL_Surface*);
+
     Image(const std::string&);
 
     ~Image();
@@ -62,16 +93,16 @@ public:
     SDL_Surface* getSurface() const;
 
     // Get as SDL_Texture (GPU memory) - requires renderer
-    TextureWrapper getTexture(SDL_Renderer*) const;
+    TextureWrapper getTexture(SDL_Renderer*&) const;
 
     // Load directly as texture (more efficient if you don't need the surface)
-    TextureWrapper loadAsTexture(SDL_Renderer*, const std::string&);
+    TextureWrapper loadAsTexture(SDL_Renderer*&, const std::string&);
 
     // Get scaled surface
-    SDL_Surface* getScaledSurface(int, int, SDL_ScaleMode) const;
+    SDL_SurfaceWrapper getScaledSurface(int, int, SDL_ScaleMode) const;
 
     // Convert surface to different pixel format
-    SDL_Surface* convertSurface(SDL_PixelFormat format) const;
+    SDL_SurfaceWrapper convertSurface(SDL_PixelFormat format) const;
 
     // Get raw pixel data
     void* getPixels() const;
@@ -122,6 +153,9 @@ public:
 
     // Unlock surface
     void unlock();
+
+    // Crop image
+    Image crop(const Geo::Rect<int>& rect) const;
 };
 
 std::string Image::getExtension(const std::string& path) {
@@ -153,6 +187,13 @@ Image::Image()
           height(0),
           loaded(false) {}
 
+Image::Image(SDL_Surface* surf)
+        : base_path(""),
+          surface(SDL_SurfaceWrapper(surf)),
+          width(surface.ref->w),
+          height(surface.ref->h),
+          loaded(true) {}
+
 Image::Image(const std::string& filename)
         : base_path(SDL_GetBasePath() ? SDL_GetBasePath() : ""),
           surface(nullptr),
@@ -170,33 +211,25 @@ bool Image::load(const std::string& filename) {
     free(); // Clean up any existing surface
     
     filepath = getFullPath(filename);
-    extension = getExtension(filepath);
     
-    if (extension.empty()) {
-        SDL_Log("Error: No file extension found for %s", filepath.c_str());
-        return false;
-    }
+    surface.ref = IMG_Load(filepath.c_str());
 
-    
-    surface = IMG_Load(filepath.c_str());
-
-    if (!surface) {
-        SDL_Log("Failed to load image %s: %s", filepath.c_str(), SDL_GetError());
-        return false;
+    if (!surface.okay()) {
+        throw std::runtime_error("[Image::load] Failed to load image '" + filepath + "': " + SDL_GetError());
     }
 
     // Extract dimensions
-    width = surface->w;
-    height = surface->h;
+    width = surface.ref->w;
+    height = surface.ref->h;
     loaded = true;
 
     return true;
 }
 
 void Image::free() {
-    if (surface) {
-        SDL_DestroySurface(surface);
-        surface = nullptr;
+    if (surface.okay()) {
+        surface.destroy();
+        surface = SDL_SurfaceWrapper(nullptr);
     }
     loaded = false;
     width = 0;
@@ -204,31 +237,30 @@ void Image::free() {
 }
 
 SDL_Surface* Image::getSurface() const {
-    return surface;
+    return surface.ref;
 }
 
-TextureWrapper Image::getTexture(SDL_Renderer* renderer) const {
-    if (!loaded || !surface || !renderer) {
-        return nullptr;
+TextureWrapper Image::getTexture(SDL_Renderer*& renderer) const {
+    if (!loaded || !surface.okay() || !renderer) {
+        throw std::runtime_error("[Image::getTexture] Image is not loaded or renderer is not set");
     }
     
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface.ref);
     if (!texture) {
-        SDL_Log("Failed to create texture: %s", SDL_GetError());
+        throw std::runtime_error("[Image::getTexture] Failed to create texture: " + std::string(SDL_GetError()));
     }
     
-    return { texture } ;
+    return { texture };
 }
 
-TextureWrapper Image::loadAsTexture(SDL_Renderer* renderer, const std::string& filename) {
-    if (!renderer) return nullptr;
+TextureWrapper Image::loadAsTexture(SDL_Renderer*& renderer, const std::string& filename) {
+    if (!renderer) throw std::runtime_error("[Image::loadAsTexture] Renderer is not set");
     
     std::string fullpath = getFullPath(filename);
     SDL_Texture* texture = IMG_LoadTexture(renderer, fullpath.c_str());
     
     if (!texture) {
-        SDL_Log("Failed to load texture %s: %s", fullpath.c_str(), SDL_GetError());
-        return nullptr;
+        throw std::runtime_error("[Image::loadAsTexture] Failed to load texture: " + std::string(SDL_GetError()));
     }
 
     // Get texture dimensions
@@ -242,76 +274,76 @@ TextureWrapper Image::loadAsTexture(SDL_Renderer* renderer, const std::string& f
     return { texture };
 }
 
-SDL_Surface* Image::getScaledSurface(int new_width, int new_height, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
-    if (!loaded || !surface) {
-        return nullptr;
+SDL_SurfaceWrapper Image::getScaledSurface(int new_width, int new_height, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getScaledSurface] Image is not loaded or surface is not set");
     }
     
-    SDL_Surface* scaled = SDL_ScaleSurface(surface, new_width, new_height, mode);
+    SDL_Surface* scaled = SDL_ScaleSurface(surface.ref, new_width, new_height, mode);
     if (!scaled) {
-        SDL_Log("Failed to scale surface: %s", SDL_GetError());
+        throw std::runtime_error("[Image::getScaledSurface] Failed to scale surface: " + std::string(SDL_GetError()));
     }
     
-    return scaled;
+    return { scaled };
 }
 
-SDL_Surface* Image::convertSurface(SDL_PixelFormat format) const {
-    if (!loaded || !surface) {
-        return nullptr;
+SDL_SurfaceWrapper Image::convertSurface(SDL_PixelFormat format) const {
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::convertSurface] Image is not loaded or surface is not set");
     }
     
-    SDL_Surface* converted = SDL_ConvertSurface(surface, format);
+    SDL_Surface* converted = SDL_ConvertSurface(surface.ref, format);
     if (!converted) {
-        SDL_Log("Failed to convert surface: %s", SDL_GetError());
+        throw std::runtime_error("[Image::convertSurface] Failed to convert surface: " + std::string(SDL_GetError()));
     }
     
-    return converted;
+    return { converted };
 }
 
 void* Image::getPixels() const {
-    if (!loaded || !surface) {
-        return nullptr;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getPixels] Image is not loaded or surface is not set");
     }
-    return surface->pixels;
+    return surface.ref->pixels;
 }
 
 int Image::getPitch() const {
-    if (!loaded || !surface) {
-        return 0;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getPitch] Image is not loaded or surface is not set");
     }
-    return surface->pitch;
+    return surface.ref->pitch;
 }
 
 SDL_PixelFormat Image::getFormat() const {
-    if (!loaded || !surface) {
-        return SDL_PIXELFORMAT_UNKNOWN;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getFormat] Image is not loaded or surface is not set");
     }
-    return surface->format;
+    return surface.ref->format;
 }
 
 bool Image::blitTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rect* destRect = nullptr) const {
-    if (!loaded || !surface || !dest) {
-        return false;
+    if (!loaded || !surface.okay() || !dest) {
+        throw std::runtime_error("[Image::blitTo] Image is not loaded or surface is not set");
     }
     
-    return SDL_BlitSurface(surface, srcRect, dest, destRect);
+    return SDL_BlitSurface(surface.ref, srcRect, dest, destRect);
 }
 
 bool Image::blitScaledTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rect* destRect = nullptr, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
-    if (!loaded || !surface || !dest) {
-        return false;
+    if (!loaded || !surface.okay() || !dest) {
+        throw std::runtime_error("[Image::blitScaledTo] Image is not loaded or surface is not set");
     }
     
-    return SDL_BlitSurfaceScaled(surface, srcRect, dest, destRect, mode);
+    return SDL_BlitSurfaceScaled(surface.ref, srcRect, dest, destRect, mode);
 }
 
 bool Image::saveBMP(const std::string& filename) const {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::saveBMP] Image is not loaded or surface is not set");
     }
     
     std::string fullpath = getFullPath(filename);
-    return SDL_SaveBMP(surface, fullpath.c_str());
+    return SDL_SaveBMP(surface.ref, fullpath.c_str());
 }
 
 int Image::getWidth() const { return width; }
@@ -322,58 +354,73 @@ std::string Image::getExtension() const { return extension; }
 std::string Image::getBasePath() const { return base_path; }
 
 bool Image::setColorMod(Uint8 r, Uint8 g, Uint8 b) {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::setColorMod] Image is not loaded or surface is not set");
     }
-    return SDL_SetSurfaceColorMod(surface, r, g, b);
+    return SDL_SetSurfaceColorMod(surface.ref, r, g, b);
 }
 
 bool Image::getColorMod(Uint8* r, Uint8* g, Uint8* b) {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");
     }
-    return SDL_GetSurfaceColorMod(surface, r, g, b);
+    return SDL_GetSurfaceColorMod(surface.ref, r, g, b);
 }
 
 bool Image::setAlphaMod(Uint8 a) {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::setAlphaMod] Image is not loaded or surface is not set");
     }
-    return SDL_SetSurfaceAlphaMod(surface, a);
+    return SDL_SetSurfaceAlphaMod(surface.ref, a);
 }
 
 bool Image::getAlphaMod(Uint8* a) const {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getAlphaMod] Image is not loaded or surface is not set");
     }
-    return SDL_GetSurfaceAlphaMod(surface, a);
+    return SDL_GetSurfaceAlphaMod(surface.ref, a);
 }
 
 bool Image::setBlendMode(SDL_BlendMode mode) {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::setBlendMode] Image is not loaded or surface is not set");
     }
-    return SDL_SetSurfaceBlendMode(surface, mode);
+    return SDL_SetSurfaceBlendMode(surface.ref, mode);
 }
 
 bool Image::getBlendMode(SDL_BlendMode* mode) const {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getBlendMode] Image is not loaded or surface is not set");
     }
-    return SDL_GetSurfaceBlendMode(surface, mode);
+    return SDL_GetSurfaceBlendMode(surface.ref, mode);
 }
 
 bool Image::lock() {
-    if (!loaded || !surface) {
-        return false;
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::lock] Image is not loaded or surface is not set");
     }
-    return SDL_LockSurface(surface);
+    return SDL_LockSurface(surface.ref);
 }
 
 void Image::unlock() {
-    if (loaded && surface) {
-        SDL_UnlockSurface(surface);
+    if (loaded && surface.okay()) {
+        SDL_UnlockSurface(surface.ref);
     }
+}
+
+Image Image::crop(const Geo::Rect<int>& rect) const {
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::crop] Image is not loaded or surface is not set");
+    }
+
+    SDL_Rect clip_rect;
+    SDL_GetSurfaceClipRect(surface.ref, &clip_rect);
+    SDL_Surface* cropped = SDL_CreateSurface(rect.width, rect.height, surface.ref->format);
+    if (!cropped) {
+        throw std::runtime_error("[Image::crop] Failed to create cropped surface: " + std::string(SDL_GetError()));
+    }
+    SDL_BlitSurface(surface.ref, &rect.get<SDL_Rect>(), cropped, nullptr);
+    return Image(cropped);
 }
 
 } // Draw

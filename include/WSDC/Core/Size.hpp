@@ -4,6 +4,7 @@ namespace WSDC {
 
 namespace Core {
 
+
 template <typename T=int>
 struct Size {
     T w, h, &width=this->w, &height=this->h;
@@ -28,6 +29,7 @@ Size<T>& Size<T>::operator=(const Size<T>& other) noexcept {
     height = other.h;
     return *this;
 }
+
 
 } // Core
 

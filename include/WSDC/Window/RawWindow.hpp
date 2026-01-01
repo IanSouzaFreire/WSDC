@@ -14,7 +14,8 @@ namespace Display {
 struct RawWindow {
     WSDC::Core::Size<int> size;
     WSDC::Core::Position<int> position;
-    std::string title;
+    std::string title,
+                renderer_name;
     SDL_WindowFlags flags{SDL_WINDOW_HIGH_PIXEL_DENSITY};
     SDL_Window* window;
     SDL_Renderer* renderer;

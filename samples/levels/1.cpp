@@ -25,7 +25,7 @@ int main(void) {
     auto texture = IMG.getTexture(main_win.raw.renderer);
 
     while (!events.update().isInTypes(SDL_EVENT_QUIT)) {
-        main_win.drawRaw(SDL_RenderClear, { 255 })
+        main_win.drawRaw(SDL_RenderClear, Colors::WHITE_SMOKE)
                 .renderRaw(SDL_RenderTexture, &texture, nullptr, &imgp.get<SDL_FRect>())
                 .update();
     }
