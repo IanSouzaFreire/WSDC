@@ -6,6 +6,8 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3_image/SDL_image.h>
 
+#include "../Core/Geometry.hpp"
+
 namespace WSDC {
 
 namespace Draw {
