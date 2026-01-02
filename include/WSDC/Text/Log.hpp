@@ -34,16 +34,16 @@ namespace Styles {
 } // namespace Styles
     
 typedef struct TextStyle {
-    Core::Color *fg = nullptr,
+    WSDC::Core::Color *fg = nullptr,
                 *bg = nullptr;
-    uint8_t style = Styles::none;
+    uint8_t style = WSDC::Log::Styles::none;
     
     bool has(const uint8_t& s) const {
         return ((this->style) & s);
     }
 } TextStyle;
 
-std::string style_to_esc(const TextStyle& style) {
+std::string style_to_esc(const WSDC::Log::TextStyle& style) {
     std::string sty = "\x1b[";
 
     if (style.fg != nullptr) {
@@ -62,14 +62,14 @@ std::string style_to_esc(const TextStyle& style) {
                   + std::to_string(style.bg->b) + ";";
     }
 
-    if (style.has(Styles::bold))     sty = sty + "1;";
-    if (style.has(Styles::dim))      sty = sty + "2;";
-    if (style.has(Styles::italic))   sty = sty + "3;";
-    if (style.has(Styles::underline)) sty = sty + "4;";
-    if (style.has(Styles::blink))    sty = sty + "5;";
-    if (style.has(Styles::inverse))  sty = sty + "7;";
-    if (style.has(Styles::hidden))   sty = sty + "8;";
-    if (style.has(Styles::strike))   sty = sty + "9;";
+    if (style.has(WSDC::Log::Styles::bold))     sty = sty + "1;";
+    if (style.has(WSDC::Log::Styles::dim))      sty = sty + "2;";
+    if (style.has(WSDC::Log::Styles::italic))   sty = sty + "3;";
+    if (style.has(WSDC::Log::Styles::underline)) sty = sty + "4;";
+    if (style.has(WSDC::Log::Styles::blink))    sty = sty + "5;";
+    if (style.has(WSDC::Log::Styles::inverse))  sty = sty + "7;";
+    if (style.has(WSDC::Log::Styles::hidden))   sty = sty + "8;";
+    if (style.has(WSDC::Log::Styles::strike))   sty = sty + "9;";
 
     if (sty[sty.size()-1] != '[') {
         sty[sty.size()-1] = 'm';
@@ -88,11 +88,11 @@ inline std::string toLink(const std::string& url, const std::string& txt) {
     return "\x1b]8;;" + url + "\x1b\\" + txt + "\x1b]8;;\x1b\\";
 }
 
-inline std::string toLink(TextStyle&& style, const std::string& url, const std::string& txt) {
+inline std::string toLink(WSDC::Log::TextStyle&& style, const std::string& url, const std::string& txt) {
     return style_to_esc(style) + "\x1b]8;;" + url + "\x1b\\" + txt + "\x1b]8;;\x1b\\\x1b[0m";
 }
 
-inline std::string toLink(TextStyle&& style, const std::string& url) {
+inline std::string toLink(WSDC::Log::TextStyle&& style, const std::string& url) {
     return style_to_esc(style) + "\x1b]8;;" + url + "\x1b\\" + url + "\x1b]8;;\x1b\\\x1b[0m";
 }
 
@@ -134,7 +134,7 @@ void print(TextStyle&& style, const std::string& fmt, Args... args) {
     delete style.bg;
 
     std::printf("%s%s%s", sty.c_str(),
-                          Format::format(fmt, args...).c_str(),
+                          WSDC::Format::format(fmt, args...).c_str(),
                           "\x1b[0m");
 }
 
@@ -146,25 +146,25 @@ void println(TextStyle&& style, const std::string& fmt, Args... args) {
     delete style.bg;
 
     std::printf("%s%s%s\n", sty.c_str(),
-                          Format::format(fmt, args...).c_str(),
+                          WSDC::Format::format(fmt, args...).c_str(),
                           "\x1b[0m");
 }
 
 template <typename... Args>
 void print(const std::string& fmt, Args... args) {
-    printf("%s", Format::format(fmt, args...).c_str());
+    printf("%s", WSDC::Format::format(fmt, args...).c_str());
 }
 
 template <typename... Args>
 void println(const std::string& fmt, Args... args) {
-    printf("%s\n", Format::format(fmt, args...).c_str());
+    printf("%s\n", WSDC::Format::format(fmt, args...).c_str());
 }
 
 void setPointerPosition(const int32_t& x, const int32_t& y) {
     printf("\x1b[%d;%dH", y, x);
 }
 
-void setPointerPosition(const Core::Position<int32_t>& position) {
+void setPointerPosition(const WSDC::Core::Position<int32_t>& position) {
     printf("\x1b[%d;%dH", position.y, position.x);
 }
 

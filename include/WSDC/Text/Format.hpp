@@ -48,7 +48,7 @@ std::variant<Ts...> tuple_runtime_get(std::size_t index, const std::tuple<Ts...>
         if (index == I) {
             return ReturnType(std::in_place_index<I>, std::get<I>(tup));
         } else {
-            return tuple_runtime_get<I + 1, Ts...>(index, tup);
+            return WSDC::Format::tuple_runtime_get<I + 1, Ts...>(index, tup);
         }
     } else {
         throw std::out_of_range("tuple_runtime_get: index out of range");
@@ -84,7 +84,7 @@ constexpr std::string format(const std::string& fmt, const Types&... args) {
 
     for (std::size_t i = 0; i < fmt.size(); ++i) {
         if (fmt[i] == '$' && i + 2 < fmt.size() && fmt[i+1] == '{') {
-            auto variant_value = tuple_runtime_get(arg_index, arguments);
+            auto variant_value = WSDC::Format::tuple_runtime_get(arg_index, arguments);
 
             if (fmt[i+2] != '}') {
                 if (fmt[i+3] != '}') {
@@ -98,12 +98,12 @@ constexpr std::string format(const std::string& fmt, const Types&... args) {
                         }, variant_value);
                         break;
                     default:
-                        throw std::runtime_error(format("format command \'${}\' not found", fmt[i+2]));
+                        throw std::runtime_error(WSDC::Format::format("format command \'${}\' not found", fmt[i+2]));
                 }
                 i += 3;
             } else {
                 std::visit([&ret](const auto& value) {
-                    ret += to_string_any(value);
+                    ret += WSDC::Format::to_string_any(value);
                 }, variant_value);
                 i += 2;
             }
@@ -122,7 +122,7 @@ inline std::string format(const std::string& fmt) {
 template <typename... Args>
 void format_p(std::string& fmt, Args... args) {
     const auto cpy = fmt;
-    fmt = format(cpy, args...);
+    fmt = WSDC::Format::format(cpy, args...);
 }
 
 

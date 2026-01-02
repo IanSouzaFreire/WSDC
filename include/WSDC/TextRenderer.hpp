@@ -25,7 +25,7 @@ public:
         return fonts[font_name];
     }
 
-    [[maybe_unused]] SDL_FRect write(const std::string& font, const Core::Position<float>& position, const std::string& text) {
+    [[maybe_unused]] SDL_FRect write(const std::string& font, const WSDC::Core::Position<float>& position, const std::string& text) {
         if (_renderer == nullptr) {
             throw std::runtime_error("[TextRenderer::write] write attempt with non-usable renderer");
         }
@@ -34,8 +34,8 @@ public:
     }
 
     template <typename... Args>
-    [[maybe_unused]] SDL_FRect write(const std::string& f, const Core::Position<float>& p, const std::string& t, Args... a) {
-        return this->write(f, p, Format::format(t, a...));
+    [[maybe_unused]] SDL_FRect write(const std::string& f, const WSDC::Core::Position<float>& p, const std::string& t, Args... a) {
+        return this->write(f, p, WSDC::Format::format(t, a...));
     }
 };
 

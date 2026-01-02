@@ -10,12 +10,12 @@ namespace Core {
 typedef uint8_t rgb_t;
 
 struct Color {
-    rgb_t r=0,
-          g=r,
-          b=g,
-          a=255;
+    WSDC::Core::rgb_t r=0,
+                      g=r,
+                      b=g,
+                      a=255;
 
-    Color(const rgb_t& _r, const rgb_t& _g, const rgb_t& _b, const rgb_t& _a) {
+    Color(const WSDC::Core::rgb_t& _r, const WSDC::Core::rgb_t& _g, const WSDC::Core::rgb_t& _b, const WSDC::Core::rgb_t& _a) {
         this->r = _r;
         this->g = _g;
         this->b = _b;
@@ -31,23 +31,27 @@ struct Color {
     }
 };
 
-[[nodiscard]] auto rgb(const rgb_t& r, const rgb_t& g, const rgb_t& b) {
-    return new Color{ r, g, b, 255 };
+[[nodiscard]] auto rgb(const WSDC::Core::rgb_t& r, const WSDC::Core::rgb_t& g, const WSDC::Core::rgb_t& b) {
+    return new WSDC::Core::Color(r, g, b, 255);
 }
 
-[[nodiscard]] auto rgb(const rgb_t& r, const rgb_t& g) {
-    return new Color{ r, g, g, 255 };
+[[nodiscard]] auto rgb(const WSDC::Core::rgb_t& r, const WSDC::Core::rgb_t& g) {
+    return new WSDC::Core::Color(r, g, g, 255);
 }
 
-[[nodiscard]] auto rgb(const rgb_t& r) {
-    return new Color{ r, r, r, 255 };
+[[nodiscard]] auto rgb(const WSDC::Core::rgb_t& r) {
+    return new WSDC::Core::Color(r, r, r, 255);
+}
+
+[[nodiscard]] auto rgb(const WSDC::Core::Color& c) {
+    return new WSDC::Core::Color(c.r, c.g, c.b, 255);
 }
 
 
 } // Core
 
 namespace Colors {
-    #define NCOL(n, r, g, b, a) const static Core::Color n (static_cast<Core::rgb_t>(r), static_cast<Core::rgb_t>(g), static_cast<Core::rgb_t>(b), static_cast<Core::rgb_t>(a));
+    #define NCOL(n, r, g, b, a) const static WSDC::Core::Color n (static_cast<WSDC::Core::rgb_t>(r), static_cast<WSDC::Core::rgb_t>(g), static_cast<WSDC::Core::rgb_t>(b), static_cast<WSDC::Core::rgb_t>(a));
 
     // Basic Colors
     NCOL(WHITE, 255, 255, 255, 255);

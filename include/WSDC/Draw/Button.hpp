@@ -7,7 +7,8 @@ namespace WSDC {
 
 namespace Draw {
 
-struct Button : public Geo::Rect<float> {
+
+struct Button : public WSDC::Geo::Rect<float> {
 
     bool isAlignedHorizontal(const SDL_FRect& sq) {
         return this->x < sq.x + sq.w   &&
@@ -23,6 +24,7 @@ struct Button : public Geo::Rect<float> {
         return isAlignedHorizontal(sq) && isAlignedVertical(sq);
     }
 };
+
 
 } // Draw
 

@@ -28,9 +28,9 @@ public:
 
         set_extra(ratio, IMG); // set data to point to
 
-        manager.createScene(Scene_e::MAIN, true) = [] (Window& win, Events&, SubWindow_l&, float& ratio, Image& IMG) {
+        manager.createScene(Scene_e::MAIN, true) = [] (Window& win, Events&, SubWindow_l&, TextRenderer&, float& ratio, Image& IMG) {
             // "ratio" and "IMG" are pointed data
-            win.drawRaw(SDL_RenderClear, { 255 });
+            win.drawRaw(SDL_RenderClear, Colors::WHITE);
 
             SDL_FRect pp;
                 pp.x = 30 * ratio;

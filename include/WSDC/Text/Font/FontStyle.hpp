@@ -48,9 +48,9 @@ namespace Styles {
 
 struct FontStyle {
     float size = 12.0f;
-    Weight weight = Weights::NORMAL;
-    Style style = Styles::NORMAL;
-    Alignment align = Align::LEFT;
+    WSDC::Text::Weight weight = WSDC::Text::Weights::NORMAL;
+    WSDC::Text::Style style = WSDC::Text::Styles::NORMAL;
+    WSDC::Text::Alignment align = WSDC::Text::Align::LEFT;
     WSDC::Core::Color color = {127, 127, 127, 255};
 
     // Equality operator for cache comparison
@@ -82,7 +82,7 @@ struct FontStyle {
         return fs;
     }
     
-    static FontStyle withWeight(Weight w) {
+    static FontStyle withWeight(WSDC::Text::Weight w) {
         FontStyle fs;
         fs.weight = w;
         return fs;
@@ -92,28 +92,28 @@ struct FontStyle {
     static FontStyle heading() {
         FontStyle fs;
         fs.size = 32.0f;
-        fs.weight = Weights::BOLD;
+        fs.weight = WSDC::Text::Weights::BOLD;
         return fs;
     }
     
     static FontStyle subheading() {
         FontStyle fs;
         fs.size = 24.0f;
-        fs.weight = Weights::SEMI_BOLD;
+        fs.weight = WSDC::Text::Weights::SEMI_BOLD;
         return fs;
     }
     
     static FontStyle body() {
         FontStyle fs;
         fs.size = 16.0f;
-        fs.weight = Weights::NORMAL;
+        fs.weight = WSDC::Text::Weights::NORMAL;
         return fs;
     }
     
     static FontStyle small() {
         FontStyle fs;
         fs.size = 12.0f;
-        fs.weight = Weights::LIGHT;
+        fs.weight = WSDC::Text::Weights::LIGHT;
         return fs;
     }
     
@@ -128,17 +128,17 @@ struct FontStyle {
         return *this;
     }
     
-    FontStyle& setWeight(Weight w) {
+    FontStyle& setWeight(WSDC::Text::Weight w) {
         weight = w;
         return *this;
     }
     
-    FontStyle& setStyle(Style s) {
+    FontStyle& setStyle(WSDC::Text::Style s) {
         style = s;
         return *this;
     }
     
-    FontStyle& setAlign(Alignment a) {
+    FontStyle& setAlign(WSDC::Text::Alignment a) {
         align = a;
         return *this;
     }

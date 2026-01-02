@@ -23,7 +23,7 @@ volatile TTF_Quitter ttf_quitter = TTF_Quitter();
 class Font {
     TTF_Font* raw = nullptr;
     std::string _filepath;
-    FontStyle _style;
+    WSDC::Text::FontStyle _style;
     
     // Cache structure for rendered text
     struct CachedText {
@@ -31,7 +31,7 @@ class Font {
         SDL_Texture* texture;
         SDL_Renderer* renderer;
         std::string text;
-        FontStyle style;
+        WSDC::Text::FontStyle style;
         int actual_width;
         int actual_height;
         
@@ -57,7 +57,7 @@ class Font {
             actual_height = 0;
         }
         
-        bool matches(const std::string& txt, const FontStyle& s, SDL_Renderer* ren) const {
+        bool matches(const std::string& txt, const WSDC::Text::FontStyle& s, SDL_Renderer* ren) const {
             return text == txt && 
                    style == s && 
                    renderer == ren &&
@@ -161,7 +161,7 @@ public:
 
     Font& unload(void) {
         clearCache();
-        _style = FontStyle();
+        _style = WSDC::Text::FontStyle();
 
         return close();
     }
@@ -259,7 +259,6 @@ public:
             throw std::runtime_error("[Font::load] Failed to open font: " + _filepath + " - " + std::string(SDL_GetError()));
         }
         
-        // Apply all current styles to the newly loaded font
         applyStyesToFont();
 
         return *this;
@@ -283,7 +282,7 @@ public:
         return _style;
     }
 
-    [[maybe_unused]] SDL_FRect write(SDL_Renderer* renderer, const Core::Position<float>& pos, 
+    [[maybe_unused]] SDL_FRect write(SDL_Renderer* renderer, const WSDC::Core::Position<float>& pos, 
                                      const std::string& text) {
         if (text.empty()) {
             return SDL_FRect{pos.x, pos.y, 0.0f, 0.0f};
@@ -298,7 +297,7 @@ public:
 
         SDL_FRect prect;
 
-        if (_style.align == Align::CENTER) {
+        if (_style.align == WSDC::Text::Align::CENTER) {
             prect.x = pos.x - (static_cast<float>(actual_width) / 2);
         } else {
             prect.x = pos.x;
@@ -315,9 +314,9 @@ public:
     }
 
     template <typename... Args>
-    [[maybe_unused]] SDL_FRect write(SDL_Renderer* r, const Core::Position<float>& p, 
+    [[maybe_unused]] SDL_FRect write(SDL_Renderer* r, const WSDC::Core::Position<float>& p, 
                                      const std::string& f, Args... a) {
-        return this->write(r, p, Format::format(f, a...));
+        return this->write(r, p, WSDC::Format::format(f, a...));
     }
     
     // Get text dimensions without rendering

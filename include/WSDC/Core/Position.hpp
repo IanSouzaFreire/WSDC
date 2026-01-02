@@ -13,7 +13,7 @@ struct Position {
 };
 
 template <typename T>
-Position<T>& Position<T>::operator=(const Position<T>& p) noexcept {
+WSDC::Core::Position<T>& WSDC::Core::Position<T>::operator=(const WSDC::Core::Position<T>& p) noexcept {
     horizontal = p.x;
     vertical = p.y;
     return *this;

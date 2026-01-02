@@ -33,7 +33,7 @@ struct Rect {
     T x, y, w, h, &width=w, &height=h;
 
     template<typename S>
-    SDL_RectWrapper<S> get(void) const {
+    WSDC::Geo::SDL_RectWrapper<S> get(void) const {
         if constexpr (std::is_same_v<S, SDL_Rect>) {
             return { S{ static_cast<int>(x),
                         static_cast<int>(y),

@@ -15,16 +15,16 @@ struct Size {
 };
 
 template <typename T>
-Size<T>::Size(void) noexcept {}
+WSDC::Core::Size<T>::Size(void) noexcept {}
 
 template <typename T>
-Size<T>::Size(const Size<T>& other) noexcept {
+WSDC::Core::Size<T>::Size(const WSDC::Core::Size<T>& other) noexcept {
     this->w = other.w;
     this->h = other.h;
 }
 
 template <typename T>
-Size<T>& Size<T>::operator=(const Size<T>& other) noexcept {
+WSDC::Core::Size<T>& Size<T>::operator=(const WSDC::Core::Size<T>& other) noexcept {
     width = other.w;
     height = other.h;
     return *this;

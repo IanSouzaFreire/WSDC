@@ -59,22 +59,22 @@ struct Window {
     float getHeight(const float&) const noexcept;
 };
 
-Window::Window(void) {
+WSDC::Display::Window::Window(void) {
     if (!SDL_Init(SDL_INIT_VIDEO)){
         throw std::runtime_error("SDL_Init failed: " + std::string(SDL_GetError()));
     }
 }
 
-Window::~Window(void) {
+WSDC::Display::Window::~Window(void) {
     close();
 }
 
-Window& Window::flags(const SDL_WindowFlags& f) {
+WSDC::Display::Window& WSDC::Display::Window::flags(const SDL_WindowFlags& f) {
     raw.flags = f;
     return self;
 }
 
-Window& Window::setFlag(const SDL_WindowFlags& flag, const bool& state) {
+WSDC::Display::Window& WSDC::Display::Window::setFlag(const SDL_WindowFlags& flag, const bool& state) {
     if (state && !(raw.flags & flag)) {
         raw.flags |= flag;
     } else if (!state && (raw.flags & flag)) {
@@ -84,31 +84,31 @@ Window& Window::setFlag(const SDL_WindowFlags& flag, const bool& state) {
     return self;
 }
 
-Window& Window::highPixelDensity(const bool& b) {
+WSDC::Display::Window& WSDC::Display::Window::highPixelDensity(const bool& b) {
     return setFlag(SDL_WINDOW_HIGH_PIXEL_DENSITY, b);
 }
 
-Window& Window::resizeable(const bool& b) {
+WSDC::Display::Window& WSDC::Display::Window::resizeable(const bool& b) {
     return setFlag(SDL_WINDOW_RESIZABLE, b);
 }
 
 template <typename T=int>
-Window& Window::position(const WSDC::Core::Position<T>& pos) {
+WSDC::Display::Window& WSDC::Display::Window::position(const WSDC::Core::Position<T>& pos) {
     raw.position = pos;
     return self;
 }
 
 template <typename T=int>
-Window& Window::size(const WSDC::Core::Size<T>& siz) {
+WSDC::Display::Window& WSDC::Display::Window::size(const WSDC::Core::Size<T>& siz) {
     raw.size = siz;
     return self;
 }
 
-Window& Window::size(const float& ratio, const float& percentage) {
+WSDC::Display::Window& WSDC::Display::Window::size(const float& ratio, const float& percentage) {
     return self.size(WSDC::Core::Util::applyNativeMonitorTo<int>(ratio, percentage));
 }
 
-Window& Window::build(void) {
+WSDC::Display::Window& WSDC::Display::Window::build(void) {
     close(); // make sure we dont spam new windows
 
     if (!SDL_CreateWindowAndRenderer(raw.title.c_str(), raw.size.width, raw.size.height, raw.flags, &raw.window, &raw.renderer)) {
@@ -120,7 +120,7 @@ Window& Window::build(void) {
     return self;
 }
 
-Window& Window::close(void) {
+WSDC::Display::Window& WSDC::Display::Window::close(void) {
     if (raw.renderer) {
         SDL_DestroyRenderer(raw.renderer);
     }
@@ -133,24 +133,24 @@ Window& Window::close(void) {
     return self;
 }
 
-Window& Window::update(void) {
+WSDC::Display::Window& WSDC::Display::Window::update(void) {
     SDL_RenderPresent(raw.renderer);
 
     return self;
 }
 
-Window& Window::setTitle(const char* str) {
+WSDC::Display::Window& WSDC::Display::Window::setTitle(const char* str) {
     SDL_SetWindowTitle(raw.window, str);
     return self;
 }
 
-Window& Window::setIcon(const char* path) {
+WSDC::Display::Window& WSDC::Display::Window::setIcon(const char* path) {
     WSDC::Draw::Image img(path);
     SDL_SetWindowIcon(raw.window, img.getSurface());
     return *this;
 }
 
-Window& Window::setVSync(const int& n) {
+WSDC::Display::Window& WSDC::Display::Window::setVSync(const int& n) {
     if (SDL_SetRenderVSync(raw.renderer, n) == false) {
         throw std::runtime_error("Could not change vsync: " + std::string(SDL_GetError()));
     }
@@ -159,23 +159,23 @@ Window& Window::setVSync(const int& n) {
 }
 
 template <class F, class... Args>
-inline Window& Window::drawRaw(F&& dfun, const WSDC::Core::Color& c, Args... args) const noexcept {
+inline WSDC::Display::Window& WSDC::Display::Window::drawRaw(F&& dfun, const WSDC::Core::Color& c, Args... args) const noexcept {
     SDL_SetRenderDrawColor(raw.renderer, c.r, c.g, c.b, c.a);
     dfun(raw.renderer, args...);
     return self;
 }
 
 template <class F, class... Args>
-inline Window& Window::renderRaw(F&& dfun, Args... args) const noexcept {
+inline WSDC::Display::Window& WSDC::Display::Window::renderRaw(F&& dfun, Args... args) const noexcept {
     dfun(raw.renderer, args...);
     return self;
 }
 
-float Window::getWidth(const float& percentage = 100) const noexcept {
+float WSDC::Display::Window::getWidth(const float& percentage = 100) const noexcept {
     return raw.size.w * (percentage / 100);
 }
 
-float Window::getHeight(const float& percentage = 100) const noexcept {
+float WSDC::Display::Window::getHeight(const float& percentage = 100) const noexcept {
     return raw.size.h * (percentage / 100);
 }
 

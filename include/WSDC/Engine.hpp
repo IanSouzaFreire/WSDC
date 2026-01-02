@@ -41,7 +41,7 @@ struct Engine {
     bool isRunning(void) noexcept;
 
     template <typename... Args>
-    void write(const std::string& _font, const Geo::Rect<int>& _position, const std::string& _text, Args... _args) {
+    void write(const std::string& _font, const WSDC::Geo::Rect<int>& _position, const std::string& _text, Args... _args) {
         text.write(_font, _position, _text, _args...);
     }
 

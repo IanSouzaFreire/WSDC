@@ -14,7 +14,6 @@ namespace Types {
 using Size = WSDC::Core::Size<int>;
 using Position = WSDC::Core::Position<int>;
 using Color = WSDC::Core::Color;
-
 using index_t = uint64_t;
 
 

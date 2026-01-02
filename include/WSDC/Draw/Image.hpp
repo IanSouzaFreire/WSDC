@@ -67,7 +67,7 @@ struct SDL_SurfaceWrapper {
 
 class Image {
     const std::string base_path;
-    SDL_SurfaceWrapper surface;
+    WSDC::Draw::SDL_SurfaceWrapper surface;
     std::string filepath;
     std::string extension;
     int width;
@@ -113,13 +113,13 @@ public:
     SDL_Texture* recreateTexture(SDL_Renderer*);
 
     // Load directly as texture (more efficient if you don't need the surface)
-    TextureWrapper loadAsTexture(SDL_Renderer*&, const std::string&);
+    WSDC::Draw::TextureWrapper loadAsTexture(SDL_Renderer*&, const std::string&);
 
     // Get scaled surface
-    SDL_SurfaceWrapper getScaledSurface(int, int, SDL_ScaleMode) const;
+    WSDC::Draw::SDL_SurfaceWrapper getScaledSurface(int, int, SDL_ScaleMode) const;
 
     // Convert surface to different pixel format
-    SDL_SurfaceWrapper convertSurface(SDL_PixelFormat format) const;
+    WSDC::Draw::SDL_SurfaceWrapper convertSurface(SDL_PixelFormat) const;
 
     // Get raw pixel data
     void* getPixels() const;
@@ -172,10 +172,10 @@ public:
     void unlock();
 
     // Crop image
-    Image crop(const Geo::Rect<int>& rect) const;
+    Image crop(const WSDC::Geo::Rect<int>& rect) const;
 };
 
-std::string Image::getExtension(const std::string& path) {
+std::string WSDC::Draw::Image::getExtension(const std::string& path) {
     size_t dot_pos = path.find_last_of('.');
     if (dot_pos != std::string::npos) {
         std::string ext = path.substr(dot_pos + 1);
@@ -185,7 +185,7 @@ std::string Image::getExtension(const std::string& path) {
     return "";
 }
 
-std::string Image::getFullPath(const std::string& filename) const {
+std::string WSDC::Draw::Image::getFullPath(const std::string& filename) const {
     if (filename.empty()) return "";
     
     // If filename is already an absolute path, use it directly
@@ -197,7 +197,7 @@ std::string Image::getFullPath(const std::string& filename) const {
     return base_path + filename;
 }
 
-void Image::clearTextureCache() {
+void WSDC::Draw::Image::clearTextureCache() {
     if (cached_texture) {
         SDL_DestroyTexture(cached_texture);
         cached_texture = nullptr;
@@ -205,7 +205,7 @@ void Image::clearTextureCache() {
     }
 }
 
-Image::Image()
+WSDC::Draw::Image::Image()
         : base_path(SDL_GetBasePath() ? SDL_GetBasePath() : ""),
           surface(nullptr),
           width(0),
@@ -214,7 +214,7 @@ Image::Image()
           cached_texture(nullptr),
           cached_renderer(nullptr) {}
 
-Image::Image(SDL_Surface* surf)
+WSDC::Draw::Image::Image(SDL_Surface* surf)
         : base_path(""),
           surface(SDL_SurfaceWrapper(surf)),
           width(surface.ref->w),
@@ -223,7 +223,7 @@ Image::Image(SDL_Surface* surf)
           cached_texture(nullptr),
           cached_renderer(nullptr) {}
 
-Image::Image(const std::string& filename)
+WSDC::Draw::Image::Image(const std::string& filename)
         : base_path(SDL_GetBasePath() ? SDL_GetBasePath() : ""),
           surface(nullptr),
           width(0),
@@ -234,11 +234,11 @@ Image::Image(const std::string& filename)
     load(filename);
 }
 
-Image::~Image() {
+WSDC::Draw::Image::~Image() {
     free();
 }
 
-bool Image::load(const std::string& filename) {
+bool WSDC::Draw::Image::load(const std::string& filename) {
     free(); // Clean up any existing surface and texture
     
     filepath = getFullPath(filename);
@@ -257,7 +257,7 @@ bool Image::load(const std::string& filename) {
     return true;
 }
 
-void Image::free() {
+void WSDC::Draw::Image::free() {
     clearTextureCache(); // Clear cached texture first
     
     if (surface.okay()) {
@@ -269,11 +269,11 @@ void Image::free() {
     height = 0;
 }
 
-SDL_Surface* Image::getSurface() const {
+SDL_Surface* WSDC::Draw::Image::getSurface() const {
     return surface.ref;
 }
 
-SDL_Texture* Image::getTexture(SDL_Renderer* renderer) const {
+SDL_Texture* WSDC::Draw::Image::getTexture(SDL_Renderer* renderer) const {
     if (!loaded || !surface.okay() || !renderer) {
         throw std::runtime_error("[Image::getTexture] Image is not loaded or renderer is not set");
     }
@@ -299,7 +299,7 @@ SDL_Texture* Image::getTexture(SDL_Renderer* renderer) const {
     return cached_texture;
 }
 
-SDL_Texture* Image::recreateTexture(SDL_Renderer* renderer) {
+SDL_Texture* WSDC::Draw::Image::recreateTexture(SDL_Renderer* renderer) {
     if (!loaded || !surface.okay() || !renderer) {
         throw std::runtime_error("[Image::recreateTexture] Image is not loaded or renderer is not set");
     }
@@ -317,7 +317,7 @@ SDL_Texture* Image::recreateTexture(SDL_Renderer* renderer) {
     return cached_texture;
 }
 
-TextureWrapper Image::loadAsTexture(SDL_Renderer*& renderer, const std::string& filename) {
+WSDC::Draw::TextureWrapper WSDC::Draw::Image::loadAsTexture(SDL_Renderer*& renderer, const std::string& filename) {
     if (!renderer) throw std::runtime_error("[Image::loadAsTexture] Renderer is not set");
     
     std::string fullpath = getFullPath(filename);
@@ -338,7 +338,7 @@ TextureWrapper Image::loadAsTexture(SDL_Renderer*& renderer, const std::string& 
     return { texture };
 }
 
-SDL_SurfaceWrapper Image::getScaledSurface(int new_width, int new_height, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
+WSDC::Draw::SDL_SurfaceWrapper WSDC::Draw::Image::getScaledSurface(int new_width, int new_height, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getScaledSurface] Image is not loaded or surface is not set");
     }
@@ -351,8 +351,8 @@ SDL_SurfaceWrapper Image::getScaledSurface(int new_width, int new_height, SDL_Sc
     return { scaled };
 }
 
-SDL_SurfaceWrapper Image::convertSurface(SDL_PixelFormat format) const {
-    if (!loaded || !surface.okay()) {
+WSDC::Draw::SDL_SurfaceWrapper WSDC::Draw::Image::convertSurface(SDL_PixelFormat format) const {
+    if (!this->loaded || !this->surface.okay()) {
         throw std::runtime_error("[Image::convertSurface] Image is not loaded or surface is not set");
     }
     
@@ -364,28 +364,28 @@ SDL_SurfaceWrapper Image::convertSurface(SDL_PixelFormat format) const {
     return { converted };
 }
 
-void* Image::getPixels() const {
+void* WSDC::Draw::Image::getPixels() const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getPixels] Image is not loaded or surface is not set");
     }
     return surface.ref->pixels;
 }
 
-int Image::getPitch() const {
+int WSDC::Draw::Image::getPitch() const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getPitch] Image is not loaded or surface is not set");
     }
     return surface.ref->pitch;
 }
 
-SDL_PixelFormat Image::getFormat() const {
+SDL_PixelFormat WSDC::Draw::Image::getFormat() const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getFormat] Image is not loaded or surface is not set");
     }
     return surface.ref->format;
 }
 
-bool Image::blitTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rect* destRect = nullptr) const {
+bool WSDC::Draw::Image::blitTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rect* destRect = nullptr) const {
     if (!loaded || !surface.okay() || !dest) {
         throw std::runtime_error("[Image::blitTo] Image is not loaded or surface is not set");
     }
@@ -393,7 +393,7 @@ bool Image::blitTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rec
     return SDL_BlitSurface(surface.ref, srcRect, dest, destRect);
 }
 
-bool Image::blitScaledTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rect* destRect = nullptr, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
+bool WSDC::Draw::Image::blitScaledTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, SDL_Rect* destRect = nullptr, SDL_ScaleMode mode = SDL_SCALEMODE_LINEAR) const {
     if (!loaded || !surface.okay() || !dest) {
         throw std::runtime_error("[Image::blitScaledTo] Image is not loaded or surface is not set");
     }
@@ -401,7 +401,7 @@ bool Image::blitScaledTo(SDL_Surface* dest, const SDL_Rect* srcRect = nullptr, S
     return SDL_BlitSurfaceScaled(surface.ref, srcRect, dest, destRect, mode);
 }
 
-bool Image::saveBMP(const std::string& filename) const {
+bool WSDC::Draw::Image::saveBMP(const std::string& filename) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::saveBMP] Image is not loaded or surface is not set");
     }
@@ -410,69 +410,69 @@ bool Image::saveBMP(const std::string& filename) const {
     return SDL_SaveBMP(surface.ref, fullpath.c_str());
 }
 
-int Image::getWidth() const { return width; }
-int Image::getHeight() const { return height; }
-bool Image::isLoaded() const { return loaded; }
-std::string Image::getFilepath() const { return filepath; }
-std::string Image::getExtension() const { return extension; }
-std::string Image::getBasePath() const { return base_path; }
+int WSDC::Draw::Image::getWidth() const { return width; }
+int WSDC::Draw::Image::getHeight() const { return height; }
+bool WSDC::Draw::Image::isLoaded() const { return loaded; }
+std::string WSDC::Draw::Image::getFilepath() const { return filepath; }
+std::string WSDC::Draw::Image::getExtension() const { return extension; }
+std::string WSDC::Draw::Image::getBasePath() const { return base_path; }
 
-bool Image::setColorMod(Uint8 r, Uint8 g, Uint8 b) {
+bool WSDC::Draw::Image::setColorMod(Uint8 r, Uint8 g, Uint8 b) {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::setColorMod] Image is not loaded or surface is not set");
     }
     return SDL_SetSurfaceColorMod(surface.ref, r, g, b);
 }
 
-bool Image::getColorMod(Uint8* r, Uint8* g, Uint8* b) {
+bool WSDC::Draw::Image::getColorMod(Uint8* r, Uint8* g, Uint8* b) {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");
     }
     return SDL_GetSurfaceColorMod(surface.ref, r, g, b);
 }
 
-bool Image::setAlphaMod(Uint8 a) {
+bool WSDC::Draw::Image::setAlphaMod(Uint8 a) {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::setAlphaMod] Image is not loaded or surface is not set");
     }
     return SDL_SetSurfaceAlphaMod(surface.ref, a);
 }
 
-bool Image::getAlphaMod(Uint8* a) const {
+bool WSDC::Draw::Image::getAlphaMod(Uint8* a) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getAlphaMod] Image is not loaded or surface is not set");
     }
     return SDL_GetSurfaceAlphaMod(surface.ref, a);
 }
 
-bool Image::setBlendMode(SDL_BlendMode mode) {
+bool WSDC::Draw::Image::setBlendMode(SDL_BlendMode mode) {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::setBlendMode] Image is not loaded or surface is not set");
     }
     return SDL_SetSurfaceBlendMode(surface.ref, mode);
 }
 
-bool Image::getBlendMode(SDL_BlendMode* mode) const {
+bool WSDC::Draw::Image::getBlendMode(SDL_BlendMode* mode) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getBlendMode] Image is not loaded or surface is not set");
     }
     return SDL_GetSurfaceBlendMode(surface.ref, mode);
 }
 
-bool Image::lock() {
+bool WSDC::Draw::Image::lock() {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::lock] Image is not loaded or surface is not set");
     }
     return SDL_LockSurface(surface.ref);
 }
 
-void Image::unlock() {
+void WSDC::Draw::Image::unlock() {
     if (loaded && surface.okay()) {
         SDL_UnlockSurface(surface.ref);
     }
 }
 
-Image Image::crop(const Geo::Rect<int>& rect) const {
+WSDC::Draw::Image WSDC::Draw::Image::crop(const WSDC::Geo::Rect<int>& rect) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::crop] Image is not loaded or surface is not set");
     }
@@ -484,7 +484,7 @@ Image Image::crop(const Geo::Rect<int>& rect) const {
         throw std::runtime_error("[Image::crop] Failed to create cropped surface: " + std::string(SDL_GetError()));
     }
     SDL_BlitSurface(surface.ref, &rect.get<SDL_Rect>(), cropped, nullptr);
-    return Image(cropped);
+    return WSDC::Draw::Image(cropped);
 }
 
 } // Draw

@@ -2,10 +2,12 @@
 
 int main(int argc, char** argv) {
     using namespace WSDC;
+    using namespace Colors;
     namespace Styles = Log::Styles;
+    
     if (argc < 5) {
-        Log::print({ Core::rgb(255, 0, 0), nullptr, Styles::bold }, "PLEASE");
-        Log::print(" use: {size} {d1} {d2} {d3}");
+        Log::print({ Core::rgb(RED), nullptr, Styles::bold }, "PLEASE");
+        Log::println(" use: {size} {d1} {d2} {d3}");
         return 0;
     }
 

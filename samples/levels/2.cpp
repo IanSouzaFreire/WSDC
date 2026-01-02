@@ -26,7 +26,7 @@ int main(void) {
            .extra(IMG, ratio);
 
     manager.createScene("MAIN", true) = [] (Window& win, Events& ev, Image& IMG, float& r) {
-        win.drawRaw(SDL_RenderClear, { 255, 255, 255 });
+        win.drawRaw(SDL_RenderClear, Colors::WHITE);
 
         SDL_FRect pp{ .x=30*r, .y=30*r, .w=100*r, .h=100*r };
         auto texture = IMG.getTexture(win.raw.renderer);
