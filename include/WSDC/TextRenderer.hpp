@@ -25,13 +25,17 @@ public:
         return fonts[font_name];
     }
 
-    template <typename... Args>
-    [[maybe_unused]] SDL_FRect write(const std::string& font, const Core::Position<float>& position, const std::string& text, Args... args) {
+    [[maybe_unused]] SDL_FRect write(const std::string& font, const Core::Position<float>& position, const std::string& text) {
         if (_renderer == nullptr) {
             throw std::runtime_error("[TextRenderer::write] write attempt with non-usable renderer");
         }
         
-        return fonts.at(font).write(_renderer, position, text, args...);;
+        return fonts.at(font).write(_renderer, position, text);
+    }
+
+    template <typename... Args>
+    [[maybe_unused]] SDL_FRect write(const std::string& f, const Core::Position<float>& p, const std::string& t, Args... a) {
+        return this->write(f, p, Format::format(t, a...));
     }
 };
 

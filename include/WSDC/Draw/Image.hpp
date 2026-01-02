@@ -18,7 +18,10 @@ struct TextureWrapper {
     }
 
     void destroy() {
-        SDL_DestroyTexture(ref);
+        if (ref) {
+            SDL_DestroyTexture(ref);
+            ref = nullptr;
+        }
     }
 
     ~TextureWrapper() {
@@ -39,7 +42,10 @@ struct SDL_SurfaceWrapper {
     }
 
     void destroy() {
-        SDL_DestroySurface(ref);
+        if (ref) {
+            SDL_DestroySurface(ref);
+            ref = nullptr;
+        }
     }
 
     ~SDL_SurfaceWrapper() {
@@ -67,12 +73,19 @@ class Image {
     int width;
     int height;
     bool loaded;
+    
+    // Caching for texture
+    mutable SDL_Texture* cached_texture;
+    mutable SDL_Renderer* cached_renderer;
 
     // Extract file extension from path
     std::string getExtension(const std::string&);
 
     // Get the full file path
     std::string getFullPath(const std::string&) const;
+    
+    // Clear texture cache
+    void clearTextureCache();
 
 public:
     Image();
@@ -86,14 +99,18 @@ public:
     // Load image from file
     bool load(const std::string&);
 
-    // Free the surface
+    // Free the surface and cached texture
     void free();
 
-    // Get as SDL_Surface (CPU memory)
+    // Get as SDL_Surface (CPU memory) - returns the internal surface
     SDL_Surface* getSurface() const;
 
-    // Get as SDL_Texture (GPU memory) - requires renderer
-    TextureWrapper getTexture(SDL_Renderer*&) const;
+    // Get as SDL_Texture (GPU memory) - CACHED version
+    // Returns cached texture if available for the same renderer
+    SDL_Texture* getTexture(SDL_Renderer*) const;
+    
+    // Force recreate texture (useful if surface was modified)
+    SDL_Texture* recreateTexture(SDL_Renderer*);
 
     // Load directly as texture (more efficient if you don't need the surface)
     TextureWrapper loadAsTexture(SDL_Renderer*&, const std::string&);
@@ -180,26 +197,40 @@ std::string Image::getFullPath(const std::string& filename) const {
     return base_path + filename;
 }
 
+void Image::clearTextureCache() {
+    if (cached_texture) {
+        SDL_DestroyTexture(cached_texture);
+        cached_texture = nullptr;
+        cached_renderer = nullptr;
+    }
+}
+
 Image::Image()
         : base_path(SDL_GetBasePath() ? SDL_GetBasePath() : ""),
           surface(nullptr),
           width(0),
           height(0),
-          loaded(false) {}
+          loaded(false),
+          cached_texture(nullptr),
+          cached_renderer(nullptr) {}
 
 Image::Image(SDL_Surface* surf)
         : base_path(""),
           surface(SDL_SurfaceWrapper(surf)),
           width(surface.ref->w),
           height(surface.ref->h),
-          loaded(true) {}
+          loaded(true),
+          cached_texture(nullptr),
+          cached_renderer(nullptr) {}
 
 Image::Image(const std::string& filename)
         : base_path(SDL_GetBasePath() ? SDL_GetBasePath() : ""),
           surface(nullptr),
           width(0),
           height(0),
-          loaded(false) {
+          loaded(false),
+          cached_texture(nullptr),
+          cached_renderer(nullptr) {
     load(filename);
 }
 
@@ -208,7 +239,7 @@ Image::~Image() {
 }
 
 bool Image::load(const std::string& filename) {
-    free(); // Clean up any existing surface
+    free(); // Clean up any existing surface and texture
     
     filepath = getFullPath(filename);
     
@@ -227,6 +258,8 @@ bool Image::load(const std::string& filename) {
 }
 
 void Image::free() {
+    clearTextureCache(); // Clear cached texture first
+    
     if (surface.okay()) {
         surface.destroy();
         surface = SDL_SurfaceWrapper(nullptr);
@@ -240,17 +273,48 @@ SDL_Surface* Image::getSurface() const {
     return surface.ref;
 }
 
-TextureWrapper Image::getTexture(SDL_Renderer*& renderer) const {
+SDL_Texture* Image::getTexture(SDL_Renderer* renderer) const {
     if (!loaded || !surface.okay() || !renderer) {
         throw std::runtime_error("[Image::getTexture] Image is not loaded or renderer is not set");
     }
     
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface.ref);
-    if (!texture) {
+    // Return cached texture if it exists and was created with the same renderer
+    if (cached_texture && cached_renderer == renderer) {
+        return cached_texture;
+    }
+    
+    // Clear old cache if renderer changed
+    if (cached_texture && cached_renderer != renderer) {
+        SDL_DestroyTexture(cached_texture);
+        cached_texture = nullptr;
+    }
+    
+    // Create new texture and cache it
+    cached_texture = SDL_CreateTextureFromSurface(renderer, surface.ref);
+    if (!cached_texture) {
         throw std::runtime_error("[Image::getTexture] Failed to create texture: " + std::string(SDL_GetError()));
     }
     
-    return { texture };
+    cached_renderer = renderer;
+    return cached_texture;
+}
+
+SDL_Texture* Image::recreateTexture(SDL_Renderer* renderer) {
+    if (!loaded || !surface.okay() || !renderer) {
+        throw std::runtime_error("[Image::recreateTexture] Image is not loaded or renderer is not set");
+    }
+    
+    // Clear existing cache
+    clearTextureCache();
+    
+    // Create new texture and cache it
+    cached_texture = SDL_CreateTextureFromSurface(renderer, surface.ref);
+    if (!cached_texture) {
+        throw std::runtime_error("[Image::recreateTexture] Failed to create texture: " + std::string(SDL_GetError()));
+    }
+    
+    cached_renderer = renderer;
+    return cached_texture;
 }
 
 TextureWrapper Image::loadAsTexture(SDL_Renderer*& renderer, const std::string& filename) {

@@ -119,6 +119,12 @@ inline std::string format(const std::string& fmt) {
     return fmt;
 }
 
+template <typename... Args>
+void format_p(std::string& fmt, Args... args) {
+    const auto cpy = fmt;
+    fmt = format(cpy, args...);
+}
+
 
 } // namespace Format
 

@@ -55,8 +55,8 @@ struct Window {
     template <class F, class... Args> [[maybe_unused]] inline Window& renderRaw(F&&, Args...) const noexcept;
 
     // get data
-    float getWidth(const float&) noexcept;
-    float getHeight(const float&) noexcept;
+    float getWidth(const float&) const noexcept;
+    float getHeight(const float&) const noexcept;
 };
 
 Window::Window(void) {
@@ -171,11 +171,11 @@ inline Window& Window::renderRaw(F&& dfun, Args... args) const noexcept {
     return self;
 }
 
-float Window::getWidth(const float& percentage = 100) noexcept {
+float Window::getWidth(const float& percentage = 100) const noexcept {
     return raw.size.w * (percentage / 100);
 }
 
-float Window::getHeight(const float& percentage = 100) noexcept {
+float Window::getHeight(const float& percentage = 100) const noexcept {
     return raw.size.h * (percentage / 100);
 }
 

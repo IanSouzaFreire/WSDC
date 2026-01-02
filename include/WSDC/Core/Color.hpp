@@ -269,7 +269,7 @@ namespace Colors {
     NCOL(LAVENDER_BLUSH, 255, 240, 245, 255);
     NCOL(MISTY_ROSE, 255, 228, 225, 255);
 
-    // Specialties
+    // I dont have a name for this ones
     NCOL(GAINSBORO, 220, 220, 220, 255);
     NCOL(BISQUE, 255, 228, 196, 255);
     NCOL(BLANCHED_ALMOND, 255, 235, 205, 255);
@@ -454,6 +454,7 @@ namespace Colors {
     NCOL(LIGHTNING_YELLOW, 255, 255, 51, 255);
     NCOL(VOID_PURPLE, 48, 25, 52, 255);
     NCOL(RADIANT_WHITE, 255, 255, 255, 255);
+    NCOL(EIGENGRAU, 22, 22, 29, 255);
     #undef NCOL
 } // Colors
 
