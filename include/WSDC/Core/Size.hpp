@@ -1,18 +1,6 @@
 #pragma once
 
-namespace WSDC {
-
-namespace Core {
-
-
-template <typename T=int>
-struct Size {
-    T w, h, &width=this->w, &height=this->h;
-
-    Size(void) noexcept;
-    Size(const Size<T>&) noexcept;
-    Size<T>& operator=(const Size<T>&) noexcept;
-};
+#include "../Definitions.hpp"
 
 template <typename T>
 WSDC::Core::Size<T>::Size(void) noexcept {}
@@ -24,13 +12,14 @@ WSDC::Core::Size<T>::Size(const WSDC::Core::Size<T>& other) noexcept {
 }
 
 template <typename T>
-WSDC::Core::Size<T>& Size<T>::operator=(const WSDC::Core::Size<T>& other) noexcept {
+WSDC::Core::Size<T>::Size(const T& _width, const T& _height) noexcept {
+    this->w = _width;
+    this->h = _height;
+}
+
+template <typename T>
+WSDC::Core::Size<T>& WSDC::Core::Size<T>::operator=(const WSDC::Core::Size<T>& other) noexcept {
     width = other.w;
     height = other.h;
     return *this;
 }
-
-
-} // Core
-
-} // WSDC

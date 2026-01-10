@@ -9,7 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "../Core/Types.hpp"
+#include "../Definitions.hpp"
 
 /* Next steps:
  *     user-defined formatting, as define a Foo struct and how to handle it in the to_string_any;
@@ -27,6 +27,7 @@
  *     - 'r' = repeat {number} {word}
  *     - format("%{r}", 5, 33)  -->  "3333333333"
  *     - format("%{r}", 4, 'a') -->  "aaaa"
+ *     - format("%{r}", 3, "abc") -->  "abcabcabc"
  *     
  *     - '-' = reverse {word}
  *     - format("%{-}", "abc")        -->  "cba"
@@ -34,13 +35,8 @@
  *     - format("%{-}", "sucafrisex") -->  "xesirfacus"
  */
 
-namespace WSDC {
-
-namespace Format {
-
-
 template <std::size_t I = 0, typename... Ts>
-std::variant<Ts...> tuple_runtime_get(std::size_t index, const std::tuple<Ts...>& tup) {
+std::variant<Ts...> WSDC::Format::tuple_runtime_get(std::size_t index, const std::tuple<Ts...>& tup) {
     using ReturnType = std::variant<Ts...>;
     constexpr std::size_t N = sizeof...(Ts);
 
@@ -57,7 +53,7 @@ std::variant<Ts...> tuple_runtime_get(std::size_t index, const std::tuple<Ts...>
 
 
 template <typename T>
-constexpr std::string to_string_any(const T& value) {
+constexpr std::string WSDC::Format::to_string_any(const T& value) {
     if constexpr (std::is_same_v<T, std::string>) {
         return value;
     } else if constexpr (std::is_same_v<T, const char*>) {
@@ -77,7 +73,7 @@ constexpr std::string to_string_any(const T& value) {
 
 
 template <typename... Types>
-constexpr std::string format(const std::string& fmt, const Types&... args) {
+constexpr std::string WSDC::Format::format(const std::string& fmt, const Types&... args) {
     std::string ret;
     auto arguments = std::make_tuple( args... );
     std::size_t arg_index = 0;
@@ -115,17 +111,12 @@ constexpr std::string format(const std::string& fmt, const Types&... args) {
     return ret;
 }
 
-inline std::string format(const std::string& fmt) {
+inline std::string WSDC::Format::format(const std::string& fmt) noexcept {
     return fmt;
 }
 
 template <typename... Args>
-void format_p(std::string& fmt, Args... args) {
+void WSDC::Format::format_p(std::string& fmt, Args... args) {
     const auto cpy = fmt;
     fmt = WSDC::Format::format(cpy, args...);
 }
-
-
-} // namespace Format
-
-} // namespace WSDC

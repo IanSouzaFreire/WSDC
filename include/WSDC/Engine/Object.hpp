@@ -1,13 +1,5 @@
 #pragma once
 
-namespace WSDC {
-
-namespace Engine {
-
+#include "../Definitions.hpp"
 
 // ...
-
-
-} // Engine
-
-} // WSDC

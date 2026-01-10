@@ -4,60 +4,19 @@
 #include <string>
 #include <cstdlib>
 
+#include "Definitions.hpp"
+#include "Core/Size.hpp"
 #include "Core/Utils.hpp"
-#include "Window/RawWindow.hpp"
 #include "Core/Color.hpp"
 #include "Draw/Image.hpp"
 
-namespace WSDC {
+namespace WSDC::Display {
+    volatile SDL_VIDEO_Quitter _WSDC_sdl_video_quitter = SDL_VIDEO_Quitter();
+}
 
-namespace Display {
-
-
-struct SDL_VIDEO_Quitter {
-    ~SDL_VIDEO_Quitter() {
-        SDL_Quit();
-    }
-};
-
-volatile SDL_VIDEO_Quitter sdl_video_quitter = SDL_VIDEO_Quitter();
-
-struct Window {
-    Window& self = (*this);
-    RawWindow raw;
-
-    Window(void);
-    ~Window(void);
-
-    // set flags
-    Window& flags(const SDL_WindowFlags&);
-    Window& setFlag(const SDL_WindowFlags&, const bool&);
-    Window& highPixelDensity(const bool&);
-    Window& resizeable(const bool&);
-
-    // configure without rebuilding
-    template <typename T> Window& position(const WSDC::Core::Position<T>&);
-    template <typename T> Window& size(const WSDC::Core::Size<T>&);
-    Window& size(const float&, const float&);
-
-    // remount window with set configurations
-    Window& build(void);
-
-    // exit facilities
-    Window& close(void);
-
-    // use while running
-    Window& update(void);
-    Window& setTitle(const char*);
-    Window& setIcon(const char*);
-    Window& setVSync(const int&);
-    template <class F, class... Args> [[maybe_unused]] inline Window& drawRaw(F&&, const WSDC::Core::Color&, Args...) const noexcept;
-    template <class F, class... Args> [[maybe_unused]] inline Window& renderRaw(F&&, Args...) const noexcept;
-
-    // get data
-    float getWidth(const float&) const noexcept;
-    float getHeight(const float&) const noexcept;
-};
+WSDC::Display::SDL_VIDEO_Quitter::~SDL_VIDEO_Quitter() {
+    SDL_Quit();
+}
 
 WSDC::Display::Window::Window(void) {
     if (!SDL_Init(SDL_INIT_VIDEO)){
@@ -102,6 +61,10 @@ template <typename T=int>
 WSDC::Display::Window& WSDC::Display::Window::size(const WSDC::Core::Size<T>& siz) {
     raw.size = siz;
     return self;
+}
+
+WSDC::Display::Window& WSDC::Display::Window::size(const float& ratio, const float& percentage, const SDL_DisplayID& id) {
+    return self.size(WSDC::Core::Util::applyMonitorTo<int>(ratio, percentage, id));
 }
 
 WSDC::Display::Window& WSDC::Display::Window::size(const float& ratio, const float& percentage) {
@@ -178,7 +141,3 @@ float WSDC::Display::Window::getWidth(const float& percentage = 100) const noexc
 float WSDC::Display::Window::getHeight(const float& percentage = 100) const noexcept {
     return raw.size.h * (percentage / 100);
 }
-
-} // Display
-
-} // WSDC

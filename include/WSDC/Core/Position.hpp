@@ -1,16 +1,24 @@
 #pragma once
 
-namespace WSDC {
+#include "../Definitions.hpp"
 
-namespace Core {
+template <typename T>
+constexpr WSDC::Core::Position<T>::Position() noexcept {
+    this->x = 0;
+    this->y = 0;
+}
 
+template <typename T>
+constexpr WSDC::Core::Position<T>::Position(const WSDC::Core::Position<T>& p) noexcept {
+    this->x = p.x;
+    this->y = p.y;
+}
 
-template <typename T=int>
-struct Position {
-    T x, y, &horizontal=this->x, &vertical=this->y;
-
-    Position<T>& operator=(const Position<T>&) noexcept;
-};
+template <typename T>
+constexpr WSDC::Core::Position<T>::Position(const T& _x, const T& _y) noexcept {
+    this->x = _x;
+    this->y = _y;
+}
 
 template <typename T>
 WSDC::Core::Position<T>& WSDC::Core::Position<T>::operator=(const WSDC::Core::Position<T>& p) noexcept {
@@ -18,8 +26,3 @@ WSDC::Core::Position<T>& WSDC::Core::Position<T>::operator=(const WSDC::Core::Po
     vertical = p.y;
     return *this;
 }
-
-
-} // Core
-
-} // WSDC

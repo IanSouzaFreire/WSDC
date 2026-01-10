@@ -1,16 +1,8 @@
 #pragma once
 
-namespace WSDC {
-
-namespace Math {
-
+#include "../Definitions.hpp"
 
 template <typename T, typename I=const T&>
-constexpr T findD(I A, I B, I C) noexcept {
+constexpr T WSDC::Math::findD(I A, I B, I C) noexcept {
     return static_cast<T>((B * C) / A);
 }
-
-
-} // Math
-
-} // WSDC

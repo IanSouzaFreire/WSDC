@@ -1,3 +1,4 @@
+#define WSDC_IMPLEMENT
 #include "WSDC.hpp"
 
 using namespace WSDC;
@@ -7,11 +8,11 @@ using namespace WSDC::Core;
 using namespace WSDC::Managers;
 using namespace WSDC::Draw;
 
-enum class Scene_e {
+enum class SCENES {
     MAIN,
 };
 
-class Game : public Engine<Scene_e, float, Image> {
+class Game : public Engine<SCENES, float, Image> {
     float ratio;
     Image IMG;
 
@@ -28,9 +29,9 @@ public:
 
         set_extra(ratio, IMG); // set data to point to
 
-        manager.createScene(Scene_e::MAIN, true) = [] (Window& win, Events&, SubWindow_l&, TextRenderer&, float& ratio, Image& IMG) {
+        manager.createScene(SCENES::MAIN, true) = [] (Window& win, Events&, SubWindows&, TextRenderer&, float& ratio, Image& IMG) {
             // "ratio" and "IMG" are pointed data
-            win.drawRaw(SDL_RenderClear, Colors::WHITE);
+            win.drawRaw(SDL_RenderClear, Colors["White"]);
 
             SDL_FRect pp;
                 pp.x = 30 * ratio;

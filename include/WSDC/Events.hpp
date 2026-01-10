@@ -1,426 +1,590 @@
 #pragma once
 
+#include <unordered_set>
+#include <unordered_map>
 #include <vector>
+#include <cstdint>
+#include <string>
 #include <SDL3/SDL_events.h>
-#include <vector>
-#include <SDL3/SDL_events.h>
 
+#include "Definitions.hpp"
+#include "Events/Mapping.hpp"
 
-namespace WSDC {
+/* Usage:
+events.update();
+    
+if (events & __EVENT_TYPE__::__EVENT__) {
+    #action#
+}
 
-namespace Managers {
+*/
 
-struct Events {
-    const bool *key_states;
-    std::vector<Uint32> type;
-    std::vector<SDL_CommonEvent> common;
-    std::vector<SDL_DisplayEvent> display;
-    std::vector<SDL_WindowEvent> window;
-    std::vector<SDL_KeyboardDeviceEvent> kdevice;
-    std::vector<SDL_KeyboardEvent> key;
-    std::vector<SDL_TextEditingEvent> edit;
-    std::vector<SDL_TextEditingCandidatesEvent> edit_candidates;
-    std::vector<SDL_TextInputEvent> text;
-    std::vector<SDL_MouseDeviceEvent> mdevice;
-    std::vector<SDL_MouseMotionEvent> motion;
-    std::vector<SDL_MouseButtonEvent> button;
-    std::vector<SDL_MouseWheelEvent> wheel;
-    std::vector<SDL_JoyDeviceEvent> jdevice;
-    std::vector<SDL_JoyAxisEvent> jaxis;
-    std::vector<SDL_JoyBallEvent> jball;
-    std::vector<SDL_JoyHatEvent> jhat;
-    std::vector<SDL_JoyButtonEvent> jbutton;
-    std::vector<SDL_JoyBatteryEvent> jbattery;
-    std::vector<SDL_GamepadDeviceEvent> gdevice;
-    std::vector<SDL_GamepadAxisEvent> gaxis;
-    std::vector<SDL_GamepadButtonEvent> gbutton;
-    std::vector<SDL_GamepadTouchpadEvent> gtouchpad;
-    std::vector<SDL_GamepadSensorEvent> gsensor;
-    std::vector<SDL_AudioDeviceEvent> adevice;
-    std::vector<SDL_CameraDeviceEvent> cdevice;
-    std::vector<SDL_SensorEvent> sensor;
-    std::vector<SDL_QuitEvent> quit;
-    std::vector<SDL_UserEvent> user;
-    std::vector<SDL_TouchFingerEvent> tfinger;
-    // std::vector<SDL_PinchFingerEvent> pinch;
-    std::vector<SDL_PenProximityEvent> pproximity;
-    std::vector<SDL_PenTouchEvent> ptouch;
-    std::vector<SDL_PenMotionEvent> pmotion;
-    std::vector<SDL_PenButtonEvent> pbutton;
-    std::vector<SDL_PenAxisEvent> paxis;
-    std::vector<SDL_RenderEvent> render;
-    std::vector<SDL_DropEvent> drop;
-    std::vector<SDL_ClipboardEvent> clipboard;
-
-    Events& update() {
-        clear();
-
-        key_states = SDL_GetKeyboardState(NULL);
-        
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            type.push_back(event.type);
-            
-            switch (event.type) {
-                case SDL_EVENT_DISPLAY_ORIENTATION:
-                case SDL_EVENT_DISPLAY_ADDED:
-                case SDL_EVENT_DISPLAY_REMOVED:
-                case SDL_EVENT_DISPLAY_MOVED:
-                case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
-                    display.push_back(event.display);
-                    break;
-                    
-                case SDL_EVENT_WINDOW_SHOWN:
-                case SDL_EVENT_WINDOW_HIDDEN:
-                case SDL_EVENT_WINDOW_EXPOSED:
-                case SDL_EVENT_WINDOW_MOVED:
-                case SDL_EVENT_WINDOW_RESIZED:
-                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-                case SDL_EVENT_WINDOW_METAL_VIEW_RESIZED:
-                case SDL_EVENT_WINDOW_MINIMIZED:
-                case SDL_EVENT_WINDOW_MAXIMIZED:
-                case SDL_EVENT_WINDOW_RESTORED:
-                case SDL_EVENT_WINDOW_MOUSE_ENTER:
-                case SDL_EVENT_WINDOW_MOUSE_LEAVE:
-                case SDL_EVENT_WINDOW_FOCUS_GAINED:
-                case SDL_EVENT_WINDOW_FOCUS_LOST:
-                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                case SDL_EVENT_WINDOW_HIT_TEST:
-                case SDL_EVENT_WINDOW_ICCPROF_CHANGED:
-                case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
-                case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
-                case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
-                case SDL_EVENT_WINDOW_OCCLUDED:
-                case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
-                case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
-                case SDL_EVENT_WINDOW_DESTROYED:
-                /*
-                case SDL_EVENT_WINDOW_PEN_ENTER:
-                case SDL_EVENT_WINDOW_PEN_LEAVE:
-                    window.push_back(event.window);
-                    break;
-                */
-                    
-                case SDL_EVENT_KEYBOARD_ADDED:
-                case SDL_EVENT_KEYBOARD_REMOVED:
-                    kdevice.push_back(event.kdevice);
-                    break;
-                    
-                case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP:
-                    key.push_back(event.key);
-                    break;
-                    
-                case SDL_EVENT_TEXT_EDITING:
-                    edit.push_back(event.edit);
-                    break;
-                    
-                case SDL_EVENT_TEXT_EDITING_CANDIDATES:
-                    edit_candidates.push_back(event.edit_candidates);
-                    break;
-                    
-                case SDL_EVENT_TEXT_INPUT:
-                    text.push_back(event.text);
-                    break;
-                    
-                case SDL_EVENT_MOUSE_ADDED:
-                case SDL_EVENT_MOUSE_REMOVED:
-                    mdevice.push_back(event.mdevice);
-                    break;
-                    
-                case SDL_EVENT_MOUSE_MOTION:
-                    motion.push_back(event.motion);
-                    break;
-                    
-                case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                case SDL_EVENT_MOUSE_BUTTON_UP:
-                    button.push_back(event.button);
-                    break;
-                    
-                case SDL_EVENT_MOUSE_WHEEL:
-                    wheel.push_back(event.wheel);
-                    break;
-                    
-                case SDL_EVENT_JOYSTICK_ADDED:
-                case SDL_EVENT_JOYSTICK_REMOVED:
-                case SDL_EVENT_JOYSTICK_UPDATE_COMPLETE:
-                    jdevice.push_back(event.jdevice);
-                    break;
-                    
-                case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-                    jaxis.push_back(event.jaxis);
-                    break;
-                    
-                case SDL_EVENT_JOYSTICK_BALL_MOTION:
-                    jball.push_back(event.jball);
-                    break;
-                    
-                case SDL_EVENT_JOYSTICK_HAT_MOTION:
-                    jhat.push_back(event.jhat);
-                    break;
-                    
-                case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-                case SDL_EVENT_JOYSTICK_BUTTON_UP:
-                    jbutton.push_back(event.jbutton);
-                    break;
-                    
-                case SDL_EVENT_JOYSTICK_BATTERY_UPDATED:
-                    jbattery.push_back(event.jbattery);
-                    break;
-                    
-                case SDL_EVENT_GAMEPAD_ADDED:
-                case SDL_EVENT_GAMEPAD_REMOVED:
-                case SDL_EVENT_GAMEPAD_REMAPPED:
-                case SDL_EVENT_GAMEPAD_UPDATE_COMPLETE:
-                case SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED:
-                    gdevice.push_back(event.gdevice);
-                    break;
-                    
-                case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-                    gaxis.push_back(event.gaxis);
-                    break;
-                    
-                case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-                case SDL_EVENT_GAMEPAD_BUTTON_UP:
-                    gbutton.push_back(event.gbutton);
-                    break;
-                    
-                case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-                case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-                case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
-                    gtouchpad.push_back(event.gtouchpad);
-                    break;
-                    
-                case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-                    gsensor.push_back(event.gsensor);
-                    break;
-                    
-                case SDL_EVENT_AUDIO_DEVICE_ADDED:
-                case SDL_EVENT_AUDIO_DEVICE_REMOVED:
-                case SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED:
-                    adevice.push_back(event.adevice);
-                    break;
-                    
-                case SDL_EVENT_CAMERA_DEVICE_ADDED:
-                case SDL_EVENT_CAMERA_DEVICE_REMOVED:
-                case SDL_EVENT_CAMERA_DEVICE_APPROVED:
-                case SDL_EVENT_CAMERA_DEVICE_DENIED:
-                    cdevice.push_back(event.cdevice);
-                    break;
-                    
-                case SDL_EVENT_SENSOR_UPDATE:
-                    sensor.push_back(event.sensor);
-                    break;
-                    
-                case SDL_EVENT_QUIT:
-                case SDL_EVENT_TERMINATING:
-                case SDL_EVENT_LOW_MEMORY:
-                case SDL_EVENT_WILL_ENTER_BACKGROUND:
-                case SDL_EVENT_DID_ENTER_BACKGROUND:
-                case SDL_EVENT_WILL_ENTER_FOREGROUND:
-                case SDL_EVENT_DID_ENTER_FOREGROUND:
-                case SDL_EVENT_LOCALE_CHANGED:
-                case SDL_EVENT_SYSTEM_THEME_CHANGED:
-                    quit.push_back(event.quit);
-                    break;
-                    
-                case SDL_EVENT_USER:
-                    user.push_back(event.user);
-                    break;
-                    
-                case SDL_EVENT_FINGER_DOWN:
-                case SDL_EVENT_FINGER_UP:
-                case SDL_EVENT_FINGER_MOTION:
-                    tfinger.push_back(event.tfinger);
-                    break;
-                /*
-                case SDL_EVENT_PINCH_BEGIN:
-                case SDL_EVENT_PINCH_ROTATE:
-                case SDL_EVENT_PINCH_END:
-                    pinch.push_back(event.pinch);
-                    break;
-                */
-                case SDL_EVENT_PEN_PROXIMITY_IN:
-                case SDL_EVENT_PEN_PROXIMITY_OUT:
-                    pproximity.push_back(event.pproximity);
-                    break;
-                    
-                case SDL_EVENT_PEN_DOWN:
-                case SDL_EVENT_PEN_UP:
-                    ptouch.push_back(event.ptouch);
-                    break;
-                    
-                case SDL_EVENT_PEN_MOTION:
-                    pmotion.push_back(event.pmotion);
-                    break;
-                    
-                case SDL_EVENT_PEN_BUTTON_DOWN:
-                case SDL_EVENT_PEN_BUTTON_UP:
-                    pbutton.push_back(event.pbutton);
-                    break;
-                    
-                case SDL_EVENT_PEN_AXIS:
-                    paxis.push_back(event.paxis);
-                    break;
-                    
-                case SDL_EVENT_RENDER_TARGETS_RESET:
-                case SDL_EVENT_RENDER_DEVICE_RESET:
-                case SDL_EVENT_RENDER_DEVICE_LOST:
-                    render.push_back(event.render);
-                    break;
-                    
-                case SDL_EVENT_DROP_BEGIN:
-                case SDL_EVENT_DROP_FILE:
-                case SDL_EVENT_DROP_TEXT:
-                case SDL_EVENT_DROP_COMPLETE:
-                case SDL_EVENT_DROP_POSITION:
-                    drop.push_back(event.drop);
-                    break;
-                    
-                case SDL_EVENT_CLIPBOARD_UPDATE:
-                    clipboard.push_back(event.clipboard);
-                    break;
-                    
-                default:
-                    common.push_back(event.common);
-                    break;
-            }
+WSDC::Managers::Events& WSDC::Managers::Events::update() {
+    mouse_flags = 0;
+    window_flags = 0;
+    system_flags = 0;
+    display_flags = 0;
+    keyboard_flags = 0;
+    gamepad_flags = 0;
+    joystick_flags = 0;
+    touch_flags = 0;
+    pen_flags = 0;
+    audio_flags = 0;
+    camera_flags = 0;
+    sensor_flags = 0;
+    render_flags = 0;
+    drop_flags = 0;
+    clipboard_flags = 0;
+    user_flags = 0;
+    
+    mouse_dx = 0;
+    mouse_dy = 0;
+    wheel_x = 0;
+    wheel_y = 0;
+    keys_pressed_this_frame.clear();
+    keys_released_this_frame.clear();
+    text_input.clear();
+    dropped_files.clear();
+    dropped_text.clear();
+    sensor_data.clear();
+    
+    key_states = SDL_GetKeyboardState(nullptr);
+    
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            // Mouse events
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                switch (event.button.button) {
+                    case SDL_BUTTON_LEFT: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::LMB_DOWN); break;
+                    case SDL_BUTTON_RIGHT: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::RMB_DOWN); break;
+                    case SDL_BUTTON_MIDDLE: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::MMB_DOWN); break;
+                    case SDL_BUTTON_X1: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::X1_DOWN); break;
+                    case SDL_BUTTON_X2: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::X2_DOWN); break;
+                }
+                mouse_x = event.button.x;
+                mouse_y = event.button.y;
+                break;
+                
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                switch (event.button.button) {
+                    case SDL_BUTTON_LEFT: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::LMB_UP); break;
+                    case SDL_BUTTON_RIGHT: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::RMB_UP); break;
+                    case SDL_BUTTON_MIDDLE: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::MMB_UP); break;
+                    case SDL_BUTTON_X1: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::X1_UP); break;
+                    case SDL_BUTTON_X2: mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::X2_UP); break;
+                }
+                mouse_x = event.button.x;
+                mouse_y = event.button.y;
+                break;
+                
+            case SDL_EVENT_MOUSE_MOTION:
+                mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::MOTION);
+                mouse_x = event.motion.x;
+                mouse_y = event.motion.y;
+                mouse_dx += event.motion.xrel;
+                mouse_dy += event.motion.yrel;
+                mouse_button_state = event.motion.state;
+                break;
+                
+            case SDL_EVENT_MOUSE_WHEEL:
+                mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::WHEEL);
+                wheel_x += event.wheel.x;
+                wheel_y += event.wheel.y;
+                break;
+                
+            case SDL_EVENT_MOUSE_ADDED:
+                mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::DEVICE_ADDED);
+                break;
+                
+            case SDL_EVENT_MOUSE_REMOVED:
+                mouse_flags |= static_cast<uint32_t>(WSDC::Event::Mouse::DEVICE_REMOVED);
+                break;
+                
+            // Keyboard events
+            case SDL_EVENT_KEY_DOWN:
+                if (!event.key.repeat) {
+                    keys_pressed_this_frame.insert(event.key.scancode);
+                }
+                break;
+                
+            case SDL_EVENT_KEY_UP:
+                keys_released_this_frame.insert(event.key.scancode);
+                break;
+                
+            case SDL_EVENT_KEYBOARD_ADDED:
+                keyboard_flags |= static_cast<uint32_t>(WSDC::Event::Keyboard::DEVICE_ADDED);
+                break;
+                
+            case SDL_EVENT_KEYBOARD_REMOVED:
+                keyboard_flags |= static_cast<uint32_t>(WSDC::Event::Keyboard::DEVICE_REMOVED);
+                break;
+                
+            case SDL_EVENT_TEXT_INPUT:
+                keyboard_flags |= static_cast<uint32_t>(WSDC::Event::Keyboard::TEXT_INPUT);
+                text_input += event.text.text;
+                break;
+                
+            case SDL_EVENT_TEXT_EDITING:
+                keyboard_flags |= static_cast<uint32_t>(WSDC::Event::Keyboard::TEXT_EDITING);
+                text_editing = event.edit.text;
+                break;
+                
+            case SDL_EVENT_TEXT_EDITING_CANDIDATES:
+                keyboard_flags |= static_cast<uint32_t>(WSDC::Event::Keyboard::TEXT_EDITING_CANDIDATES);
+                break;
+                
+            // Window events
+            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::CLOSE);
+                window_id = event.window.windowID;
+                break;
+            case SDL_EVENT_WINDOW_RESIZED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::RESIZED);
+                window_width = static_cast<int>(event.window.data1);
+                window_height = static_cast<int>(event.window.data2);
+                window_id = event.window.windowID;
+                break;
+            case SDL_EVENT_WINDOW_MINIMIZED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::MINIMIZED);
+                break;
+            case SDL_EVENT_WINDOW_MAXIMIZED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::MAXIMIZED);
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::FOCUS_GAINED);
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::FOCUS_LOST);
+                break;
+            case SDL_EVENT_WINDOW_SHOWN:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::SHOWN);
+                break;
+            case SDL_EVENT_WINDOW_HIDDEN:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::HIDDEN);
+                break;
+            case SDL_EVENT_WINDOW_MOVED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::MOVED);
+                break;
+            case SDL_EVENT_WINDOW_EXPOSED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::EXPOSED);
+                break;
+            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::PIXEL_SIZE_CHANGED);
+                break;
+            case SDL_EVENT_WINDOW_METAL_VIEW_RESIZED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::METAL_VIEW_RESIZED);
+                break;
+            case SDL_EVENT_WINDOW_RESTORED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::RESTORED);
+                break;
+            case SDL_EVENT_WINDOW_MOUSE_ENTER:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::MOUSE_ENTER);
+                break;
+            case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::MOUSE_LEAVE);
+                break;
+            case SDL_EVENT_WINDOW_HIT_TEST:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::HIT_TEST);
+                break;
+            case SDL_EVENT_WINDOW_ICCPROF_CHANGED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::ICCPROF_CHANGED);
+                break;
+            case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::DISPLAY_CHANGED);
+                break;
+            case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::DISPLAY_SCALE_CHANGED);
+                break;
+            case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::SAFE_AREA_CHANGED);
+                break;
+            case SDL_EVENT_WINDOW_OCCLUDED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::OCCLUDED);
+                break;
+            case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::ENTER_FULLSCREEN);
+                break;
+            case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::LEAVE_FULLSCREEN);
+                break;
+            case SDL_EVENT_WINDOW_DESTROYED:
+                window_flags |= static_cast<uint32_t>(WSDC::Event::Window::DESTROYED);
+                break;
+                
+            // System events
+            case SDL_EVENT_QUIT:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::QUIT);
+                break;
+            case SDL_EVENT_TERMINATING:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::TERMINATING);
+                break;
+            case SDL_EVENT_LOW_MEMORY:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::LOW_MEMORY);
+                break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::WILL_ENTER_BACKGROUND);
+                break;
+            case SDL_EVENT_DID_ENTER_BACKGROUND:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::DID_ENTER_BACKGROUND);
+                break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::WILL_ENTER_FOREGROUND);
+                break;
+            case SDL_EVENT_DID_ENTER_FOREGROUND:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::DID_ENTER_FOREGROUND);
+                break;
+            case SDL_EVENT_LOCALE_CHANGED:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::LOCALE_CHANGED);
+                break;
+            case SDL_EVENT_SYSTEM_THEME_CHANGED:
+                system_flags |= static_cast<uint32_t>(WSDC::Event::System::SYSTEM_THEME_CHANGED);
+                break;
+                
+            // Display events
+            case SDL_EVENT_DISPLAY_ORIENTATION:
+                display_flags |= static_cast<uint32_t>(WSDC::Event::Display::ORIENTATION);
+                display_id = event.display.displayID;
+                display_orientation = static_cast<SDL_DisplayOrientation>(event.display.data1);
+                break;
+            case SDL_EVENT_DISPLAY_ADDED:
+                display_flags |= static_cast<uint32_t>(WSDC::Event::Display::ADDED);
+                display_id = event.display.displayID;
+                break;
+            case SDL_EVENT_DISPLAY_REMOVED:
+                display_flags |= static_cast<uint32_t>(WSDC::Event::Display::REMOVED);
+                display_id = event.display.displayID;
+                break;
+            case SDL_EVENT_DISPLAY_MOVED:
+                display_flags |= static_cast<uint32_t>(WSDC::Event::Display::MOVED);
+                display_id = event.display.displayID;
+                break;
+            case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
+                display_flags |= static_cast<uint32_t>(WSDC::Event::Display::CONTENT_SCALE_CHANGED);
+                display_id = event.display.displayID;
+                break;
+                
+            // Gamepad events
+            case SDL_EVENT_GAMEPAD_ADDED:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::ADDED);
+                active_gamepads.insert(event.gdevice.which);
+                break;
+            case SDL_EVENT_GAMEPAD_REMOVED:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::REMOVED);
+                active_gamepads.erase(event.gdevice.which);
+                break;
+            case SDL_EVENT_GAMEPAD_REMAPPED:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::REMAPPED);
+                break;
+            case SDL_EVENT_GAMEPAD_UPDATE_COMPLETE:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::UPDATE_COMPLETE);
+                break;
+            case SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::STEAM_HANDLE_UPDATED);
+                break;
+            case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::AXIS_MOTION);
+                gamepad_axes[event.gaxis.which] = static_cast<SDL_GamepadAxis>(event.gaxis.axis);
+                break;
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::BUTTON_DOWN);
+                gamepad_buttons[event.gbutton.which] = static_cast<SDL_GamepadButton>(event.gbutton.button);
+                break;
+            case SDL_EVENT_GAMEPAD_BUTTON_UP:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::BUTTON_UP);
+                gamepad_buttons[event.gbutton.which] = static_cast<SDL_GamepadButton>(event.gbutton.button);
+                break;
+            case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::TOUCHPAD_DOWN);
+                break;
+            case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::TOUCHPAD_MOTION);
+                break;
+            case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::TOUCHPAD_UP);
+                break;
+            case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+                gamepad_flags |= static_cast<uint32_t>(WSDC::Event::Gamepad::SENSOR_UPDATE);
+                break;
+                
+            // Joystick events
+            case SDL_EVENT_JOYSTICK_ADDED:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::ADDED);
+                active_joysticks.insert(event.jdevice.which);
+                break;
+            case SDL_EVENT_JOYSTICK_REMOVED:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::REMOVED);
+                active_joysticks.erase(event.jdevice.which);
+                break;
+            case SDL_EVENT_JOYSTICK_UPDATE_COMPLETE:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::UPDATE_COMPLETE);
+                break;
+            case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::AXIS_MOTION);
+                joystick_axes[event.jaxis.which] = event.jaxis.axis;
+                break;
+            case SDL_EVENT_JOYSTICK_BALL_MOTION:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::BALL_MOTION);
+                break;
+            case SDL_EVENT_JOYSTICK_HAT_MOTION:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::HAT_MOTION);
+                break;
+            case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::BUTTON_DOWN);
+                joystick_buttons[event.jbutton.which] = event.jbutton.button;
+                break;
+            case SDL_EVENT_JOYSTICK_BUTTON_UP:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::BUTTON_UP);
+                joystick_buttons[event.jbutton.which] = event.jbutton.button;
+                break;
+            case SDL_EVENT_JOYSTICK_BATTERY_UPDATED:
+                joystick_flags |= static_cast<uint32_t>(WSDC::Event::Joystick::BATTERY_UPDATED);
+                break;
+                
+            // Touch events
+            case SDL_EVENT_FINGER_DOWN:
+                touch_flags |= static_cast<uint32_t>(WSDC::Event::Touch::FINGER_DOWN);
+                touch_fingers[event.tfinger.fingerID] = {
+                    event.tfinger.x, event.tfinger.y,
+                    event.tfinger.dx, event.tfinger.dy,
+                    event.tfinger.pressure
+                };
+                break;
+            case SDL_EVENT_FINGER_UP:
+                touch_flags |= static_cast<uint32_t>(WSDC::Event::Touch::FINGER_UP);
+                touch_fingers.erase(event.tfinger.fingerID);
+                break;
+            case SDL_EVENT_FINGER_MOTION:
+                touch_flags |= static_cast<uint32_t>(WSDC::Event::Touch::FINGER_MOTION);
+                touch_fingers[event.tfinger.fingerID] = {
+                    event.tfinger.x, event.tfinger.y,
+                    event.tfinger.dx, event.tfinger.dy,
+                    event.tfinger.pressure
+                };
+                break;
+                
+            // Pen events
+            case SDL_EVENT_PEN_PROXIMITY_IN:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::PROXIMITY_IN);
+                pen_id = event.pproximity.which;
+                break;
+            case SDL_EVENT_PEN_PROXIMITY_OUT:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::PROXIMITY_OUT);
+                pen_id = event.pproximity.which;
+                break;
+            case SDL_EVENT_PEN_DOWN:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::DOWN);
+                pen_x = event.ptouch.x;
+                pen_y = event.ptouch.y;
+                break;
+            case SDL_EVENT_PEN_UP:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::UP);
+                pen_x = event.ptouch.x;
+                pen_y = event.ptouch.y;
+                break;
+            case SDL_EVENT_PEN_MOTION:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::MOTION);
+                pen_x = event.pmotion.x;
+                pen_y = event.pmotion.y;
+                break;
+            case SDL_EVENT_PEN_BUTTON_DOWN:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::BUTTON_DOWN);
+                break;
+            case SDL_EVENT_PEN_BUTTON_UP:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::BUTTON_UP);
+                break;
+            case SDL_EVENT_PEN_AXIS:
+                pen_flags |= static_cast<uint32_t>(WSDC::Event::Pen::AXIS);
+                if (event.paxis.axis == SDL_PEN_AXIS_PRESSURE) {
+                    pen_pressure = event.paxis.value;
+                } else if (event.paxis.axis == SDL_PEN_AXIS_XTILT) {
+                    pen_tilt_x = event.paxis.value;
+                } else if (event.paxis.axis == SDL_PEN_AXIS_YTILT) {
+                    pen_tilt_y = event.paxis.value;
+                }
+                break;
+                
+            // Audio events
+            case SDL_EVENT_AUDIO_DEVICE_ADDED:
+                audio_flags |= static_cast<uint32_t>(WSDC::Event::Audio::DEVICE_ADDED);
+                audio_device_id = event.adevice.which;
+                break;
+            case SDL_EVENT_AUDIO_DEVICE_REMOVED:
+                audio_flags |= static_cast<uint32_t>(WSDC::Event::Audio::DEVICE_REMOVED);
+                audio_device_id = event.adevice.which;
+                break;
+            case SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED:
+                audio_flags |= static_cast<uint32_t>(WSDC::Event::Audio::DEVICE_FORMAT_CHANGED);
+                audio_device_id = event.adevice.which;
+                break;
+                
+            // Camera events
+            case SDL_EVENT_CAMERA_DEVICE_ADDED:
+                camera_flags |= static_cast<uint32_t>(WSDC::Event::Camera::DEVICE_ADDED);
+                camera_device_id = event.cdevice.which;
+                break;
+            case SDL_EVENT_CAMERA_DEVICE_REMOVED:
+                camera_flags |= static_cast<uint32_t>(WSDC::Event::Camera::DEVICE_REMOVED);
+                camera_device_id = event.cdevice.which;
+                break;
+            case SDL_EVENT_CAMERA_DEVICE_APPROVED:
+                camera_flags |= static_cast<uint32_t>(WSDC::Event::Camera::DEVICE_APPROVED);
+                camera_device_id = event.cdevice.which;
+                break;
+            case SDL_EVENT_CAMERA_DEVICE_DENIED:
+                camera_flags |= static_cast<uint32_t>(WSDC::Event::Camera::DEVICE_DENIED);
+                camera_device_id = event.cdevice.which;
+                break;
+                
+            // Sensor events
+            case SDL_EVENT_SENSOR_UPDATE:
+                sensor_flags |= static_cast<uint32_t>(WSDC::Event::Sensor::UPDATE);
+                sensor_data.clear();
+                for (int i = 0; i < 6 && event.sensor.data[i] != 0; i++) {
+                    sensor_data.push_back(event.sensor.data[i]);
+                }
+                break;
+                
+            // Render events
+            case SDL_EVENT_RENDER_TARGETS_RESET:
+                render_flags |= static_cast<uint32_t>(WSDC::Event::Render::TARGETS_RESET);
+                break;
+            case SDL_EVENT_RENDER_DEVICE_RESET:
+                render_flags |= static_cast<uint32_t>(WSDC::Event::Render::DEVICE_RESET);
+                break;
+            case SDL_EVENT_RENDER_DEVICE_LOST:
+                render_flags |= static_cast<uint32_t>(WSDC::Event::Render::DEVICE_LOST);
+                break;
+                
+            // Drop events
+            case SDL_EVENT_DROP_BEGIN:
+                drop_flags |= static_cast<uint32_t>(WSDC::Event::Drop::BEGIN);
+                break;
+            case SDL_EVENT_DROP_FILE:
+                drop_flags |= static_cast<uint32_t>(WSDC::Event::Drop::FILE);
+                if (event.drop.data) {
+                    dropped_files.push_back(event.drop.data);
+                }
+                break;
+            case SDL_EVENT_DROP_TEXT:
+                drop_flags |= static_cast<uint32_t>(WSDC::Event::Drop::TEXT);
+                if (event.drop.data) {
+                    dropped_text = event.drop.data;
+                }
+                break;
+            case SDL_EVENT_DROP_COMPLETE:
+                drop_flags |= static_cast<uint32_t>(WSDC::Event::Drop::COMPLETE);
+                break;
+            case SDL_EVENT_DROP_POSITION:
+                drop_flags |= static_cast<uint32_t>(WSDC::Event::Drop::POSITION);
+                drop_x = event.drop.x;
+                drop_y = event.drop.y;
+                break;
+                
+            // Clipboard events
+            case SDL_EVENT_CLIPBOARD_UPDATE:
+                clipboard_flags |= static_cast<uint32_t>(WSDC::Event::Clipboard::UPDATE);
+                break;
+                
+            // User events
+            case SDL_EVENT_USER:
+                user_flags |= static_cast<uint32_t>(WSDC::Event::User::EVENT);
+                user_code = event.user.code;
+                user_data1 = event.user.data1;
+                user_data2 = event.user.data2;
+                break;
         }
-        
-        return *this;
     }
     
-    Events& clear() {
-        type.clear();
-        common.clear();
-        display.clear();
-        window.clear();
-        kdevice.clear();
-        key.clear();
-        edit.clear();
-        edit_candidates.clear();
-        text.clear();
-        mdevice.clear();
-        motion.clear();
-        button.clear();
-        wheel.clear();
-        jdevice.clear();
-        jaxis.clear();
-        jball.clear();
-        jhat.clear();
-        jbutton.clear();
-        jbattery.clear();
-        gdevice.clear();
-        gaxis.clear();
-        gbutton.clear();
-        gtouchpad.clear();
-        gsensor.clear();
-        adevice.clear();
-        cdevice.clear();
-        sensor.clear();
-        quit.clear();
-        user.clear();
-        tfinger.clear();
-        // pinch.clear();
-        pproximity.clear();
-        ptouch.clear();
-        pmotion.clear();
-        pbutton.clear();
-        paxis.clear();
-        render.clear();
-        drop.clear();
-        clipboard.clear();
+    return *this;
+}
 
-        return *this;
-    }
+// Operator overloads for flag checking
+bool WSDC::Managers::Events::operator&(WSDC::Event::Mouse m) const { return (mouse_flags & static_cast<uint32_t>(m)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Window w) const { return (window_flags & static_cast<uint32_t>(w)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::System s) const { return (system_flags & static_cast<uint32_t>(s)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Display d) const { return (display_flags & static_cast<uint32_t>(d)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Keyboard k) const { return (keyboard_flags & static_cast<uint32_t>(k)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Gamepad g) const { return (gamepad_flags & static_cast<uint32_t>(g)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Joystick j) const { return (joystick_flags & static_cast<uint32_t>(j)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Touch t) const { return (touch_flags & static_cast<uint32_t>(t)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Pen p) const { return (pen_flags & static_cast<uint32_t>(p)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Audio a) const { return (audio_flags & static_cast<uint32_t>(a)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Camera c) const { return (camera_flags & static_cast<uint32_t>(c)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Sensor s) const { return (sensor_flags & static_cast<uint32_t>(s)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Render r) const { return (render_flags & static_cast<uint32_t>(r)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Drop d) const { return (drop_flags & static_cast<uint32_t>(d)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::Clipboard c) const { return (clipboard_flags & static_cast<uint32_t>(c)) != 0; }
+bool WSDC::Managers::Events::operator&(WSDC::Event::User u) const { return (user_flags & static_cast<uint32_t>(u)) != 0; }
+template <class EV> bool WSDC::Managers::Events::isEvent(EV e) { return this->operator&(e); }
 
-    bool isPressed(const SDL_Scancode& scan) {
-        return key_states[scan];
-    }
+// Keyboard queries
+bool WSDC::Managers::Events::isKeyHeld(SDL_Scancode sc) const { return key_states && key_states[sc]; }
+bool WSDC::Managers::Events::isKeyPressed(SDL_Scancode sc) const { return keys_pressed_this_frame.count(sc) > 0; }
+bool WSDC::Managers::Events::isKeyReleased(SDL_Scancode sc) const { return keys_released_this_frame.count(sc) > 0; }
 
-    bool isInTypes(const Uint32& c) { for ( const auto& ev : type) if (ev == c) return true; return false; } // does not work on this one
-    bool isInCommonEvents(const SDL_CommonEvent& c) { for ( const auto& ev : common) if (ev.type == c.type) return true; return false; }
-    bool isInDisplayEvents(const SDL_DisplayEvent& c) { for ( const auto& ev : display) if (ev.type == c.type) return true; return false; }
-    bool isInWindowEvents(const SDL_WindowEvent& c) { for ( const auto& ev : window) if (ev.type == c.type) return true; return false; }
-    bool isInKeyboardDeviceEvents(const SDL_KeyboardDeviceEvent& c) { for ( const auto& ev : kdevice) if (ev.type == c.type) return true; return false; }
-    bool isInKeyboardEvents(const SDL_KeyboardEvent& c) { for ( const auto& ev : key) if (ev.type == c.type) return true; return false; }
-    bool isInTextEditingEvents(const SDL_TextEditingEvent& c) { for ( const auto& ev : edit) if (ev.type == c.type) return true; return false; }
-    bool isInTextEditingCandidatesEvents(const SDL_TextEditingCandidatesEvent& c) { for ( const auto& ev : edit_candidates) if (ev.type == c.type) return true; return false; }
-    bool isInTextInputEvents(const SDL_TextInputEvent& c) { for ( const auto& ev : text) if (ev.type == c.type) return true; return false; }
-    bool isInMouseDeviceEvents(const SDL_MouseDeviceEvent& c) { for ( const auto& ev : mdevice) if (ev.type == c.type) return true; return false; }
-    bool isInMouseMotionEvents(const SDL_MouseMotionEvent& c) { for ( const auto& ev : motion) if (ev.type == c.type) return true; return false; }
-    bool isInMouseButtonEvents(const SDL_MouseButtonEvent& c) { for ( const auto& ev : button) if (ev.type == c.type) return true; return false; }
-    bool isInMouseWheelEvents(const SDL_MouseWheelEvent& c) { for ( const auto& ev : wheel) if (ev.type == c.type) return true; return false; }
-    bool isInJoyDeviceEvents(const SDL_JoyDeviceEvent& c) { for ( const auto& ev : jdevice) if (ev.type == c.type) return true; return false; }
-    bool isInJoyAxisEvents(const SDL_JoyAxisEvent& c) { for ( const auto& ev : jaxis) if (ev.type == c.type) return true; return false; }
-    bool isInJoyBallEvents(const SDL_JoyBallEvent& c) { for ( const auto& ev : jball) if (ev.type == c.type) return true; return false; }
-    bool isInJoyHatEvents(const SDL_JoyHatEvent& c) { for ( const auto& ev : jhat) if (ev.type == c.type) return true; return false; }
-    bool isInJoyButtonEvents(const SDL_JoyButtonEvent& c) { for ( const auto& ev : jbutton) if (ev.type == c.type) return true; return false; }
-    bool isInJoyBatteryEvents(const SDL_JoyBatteryEvent& c) { for ( const auto& ev : jbattery) if (ev.type == c.type) return true; return false; }
-    bool isInGamepadDeviceEvents(const SDL_GamepadDeviceEvent& c) { for ( const auto& ev : gdevice) if (ev.type == c.type) return true; return false; }
-    bool isInGamepadAxisEvents(const SDL_GamepadAxisEvent& c) { for ( const auto& ev : gaxis) if (ev.type == c.type) return true; return false; }
-    bool isInGamepadButtonEvents(const SDL_GamepadButtonEvent& c) { for ( const auto& ev : gbutton) if (ev.type == c.type) return true; return false; }
-    bool isInGamepadTouchpadEvents(const SDL_GamepadTouchpadEvent& c) { for ( const auto& ev : gtouchpad) if (ev.type == c.type) return true; return false; }
-    bool isInGamepadSensorEvents(const SDL_GamepadSensorEvent& c) { for ( const auto& ev : gsensor) if (ev.type == c.type) return true; return false; }
-    bool isInAudioDeviceEvents(const SDL_AudioDeviceEvent& c) { for ( const auto& ev : adevice) if (ev.type == c.type) return true; return false; }
-    bool isInCameraDeviceEvents(const SDL_CameraDeviceEvent& c) { for ( const auto& ev : cdevice) if (ev.type == c.type) return true; return false; }
-    bool isInSensorEvents(const SDL_SensorEvent& c) { for ( const auto& ev : sensor) if (ev.type == c.type) return true; return false; }
-    bool isInQuitEvents(const SDL_QuitEvent& c) { for ( const auto& ev : quit) if (ev.type == c.type) return true; return false; }
-    bool isInUserEvents(const SDL_UserEvent& c) { for ( const auto& ev : user) if (ev.type == c.type) return true; return false; }
-    bool isInTouchFingerEvents(const SDL_TouchFingerEvent& c) { for ( const auto& ev : tfinger) if (ev.type == c.type) return true; return false; }
-    // bool isInPinchFingerEvents(const SDL_PinchFingerEvent& c) { for ( const auto& ev : pinch) if (ev.type == c.type) return true; return false; }
-    bool isInPenProximityEvents(const SDL_PenProximityEvent& c) { for ( const auto& ev : pproximity) if (ev.type == c.type) return true; return false; }
-    bool isInPenTouchEvents(const SDL_PenTouchEvent& c) { for ( const auto& ev : ptouch) if (ev.type == c.type) return true; return false; }
-    bool isInPenMotionEvents(const SDL_PenMotionEvent& c) { for ( const auto& ev : pmotion) if (ev.type == c.type) return true; return false; }
-    bool isInPenButtonEvents(const SDL_PenButtonEvent& c) { for ( const auto& ev : pbutton) if (ev.type == c.type) return true; return false; }
-    bool isInPenAxisEvents(const SDL_PenAxisEvent& c) { for ( const auto& ev : paxis) if (ev.type == c.type) return true; return false; }
-    bool isInRenderEvents(const SDL_RenderEvent& c) { for ( const auto& ev : render) if (ev.type == c.type) return true; return false; }
-    bool isInDropEvents(const SDL_DropEvent& c) { for ( const auto& ev : drop) if (ev.type == c.type) return true; return false; }
-    bool isInClipboardEvents(const SDL_ClipboardEvent& c) { for ( const auto& ev : clipboard) if (ev.type == c.type) return true; return false; }
+// Mouse state
+float WSDC::Managers::Events::mouseX() const { return mouse_x; }
+float WSDC::Managers::Events::mouseY() const { return mouse_y; }
+WSDC::Core::Position<float> WSDC::Managers::Events::mouse() const { return {mouse_x, mouse_y}; }
+float WSDC::Managers::Events::mouseDX() const { return mouse_dx; }
+float WSDC::Managers::Events::mouseDY() const { return mouse_dy; }
+WSDC::Core::Position<float> WSDC::Managers::Events::mouseDelta() const { return {mouse_dx, mouse_dy}; }
+float WSDC::Managers::Events::wheelX() const { return wheel_x; }
+float WSDC::Managers::Events::wheelY() const { return wheel_y; }
+WSDC::Core::Position<float> WSDC::Managers::Events::wheel() const { return {wheel_x, wheel_y}; }
+uint32_t WSDC::Managers::Events::mouseButtonState() const { return mouse_button_state; }
 
-    // /std::vector<SDL_(\w+)> (\w+);/g -> /const std::vector<SDL_$1>& get$1(void) const { return $2; }/
-    const std::vector<Uint32>& getTypes() const { return type; } // does not work on this one
-    const std::vector<SDL_CommonEvent>& getCommonEvent(void) const { return common; }
-    const std::vector<SDL_DisplayEvent>& getDisplayEvent(void) const { return display; }
-    const std::vector<SDL_WindowEvent>& getWindowEvent(void) const { return window; }
-    const std::vector<SDL_KeyboardDeviceEvent>& getKeyboardDeviceEvent(void) const { return kdevice; }
-    const std::vector<SDL_KeyboardEvent>& getKeyboardEvent(void) const { return key; }
-    const std::vector<SDL_TextEditingEvent>& getTextEditingEvent(void) const { return edit; }
-    const std::vector<SDL_TextEditingCandidatesEvent>& getTextEditingCandidatesEvent(void) const { return edit_candidates; }
-    const std::vector<SDL_TextInputEvent>& getTextInputEvent(void) const { return text; }
-    const std::vector<SDL_MouseDeviceEvent>& getMouseDeviceEvent(void) const { return mdevice; }
-    const std::vector<SDL_MouseMotionEvent>& getMouseMotionEvent(void) const { return motion; }
-    const std::vector<SDL_MouseButtonEvent>& getMouseButtonEvent(void) const { return button; }
-    const std::vector<SDL_MouseWheelEvent>& getMouseWheelEvent(void) const { return wheel; }
-    const std::vector<SDL_JoyDeviceEvent>& getJoyDeviceEvent(void) const { return jdevice; }
-    const std::vector<SDL_JoyAxisEvent>& getJoyAxisEvent(void) const { return jaxis; }
-    const std::vector<SDL_JoyBallEvent>& getJoyBallEvent(void) const { return jball; }
-    const std::vector<SDL_JoyHatEvent>& getJoyHatEvent(void) const { return jhat; }
-    const std::vector<SDL_JoyButtonEvent>& getJoyButtonEvent(void) const { return jbutton; }
-    const std::vector<SDL_JoyBatteryEvent>& getJoyBatteryEvent(void) const { return jbattery; }
-    const std::vector<SDL_GamepadDeviceEvent>& getGamepadDeviceEvent(void) const { return gdevice; }
-    const std::vector<SDL_GamepadAxisEvent>& getGamepadAxisEvent(void) const { return gaxis; }
-    const std::vector<SDL_GamepadButtonEvent>& getGamepadButtonEvent(void) const { return gbutton; }
-    const std::vector<SDL_GamepadTouchpadEvent>& getGamepadTouchpadEvent(void) const { return gtouchpad; }
-    const std::vector<SDL_GamepadSensorEvent>& getGamepadSensorEvent(void) const { return gsensor; }
-    const std::vector<SDL_AudioDeviceEvent>& getAudioDeviceEvent(void) const { return adevice; }
-    const std::vector<SDL_CameraDeviceEvent>& getCameraDeviceEvent(void) const { return cdevice; }
-    const std::vector<SDL_SensorEvent>& getSensorEvent(void) const { return sensor; }
-    const std::vector<SDL_QuitEvent>& getQuitEvent(void) const { return quit; }
-    const std::vector<SDL_UserEvent>& getUserEvent(void) const { return user; }
-    const std::vector<SDL_TouchFingerEvent>& getTouchFingerEvent(void) const { return tfinger; }
-    // const std::vector<SDL_PinchFingerEvent>& getPinchFingerEvent(void) const { return pinch; }
-    const std::vector<SDL_PenProximityEvent>& getPenProximityEvent(void) const { return pproximity; }
-    const std::vector<SDL_PenTouchEvent>& getPenTouchEvent(void) const { return ptouch; }
-    const std::vector<SDL_PenMotionEvent>& getPenMotionEvent(void) const { return pmotion; }
-    const std::vector<SDL_PenButtonEvent>& getPenButtonEvent(void) const { return pbutton; }
-    const std::vector<SDL_PenAxisEvent>& getPenAxisEvent(void) const { return paxis; }
-    const std::vector<SDL_RenderEvent>& getRenderEvent(void) const { return render; }
-    const std::vector<SDL_DropEvent>& getDropEvent(void) const { return drop; }
-    const std::vector<SDL_ClipboardEvent>& getClipboardEvent(void) const { return clipboard; }
-    
-};
+// Window state
+int WSDC::Managers::Events::windowWidth() const { return window_width; }
+int WSDC::Managers::Events::windowHeight() const { return window_height; }
+WSDC::Core::Size<int> WSDC::Managers::Events::window() const { return {window_width, window_height}; }
+SDL_WindowID WSDC::Managers::Events::windowID() const { return window_id; }
 
-} // Managers
+// Display state
+SDL_DisplayID WSDC::Managers::Events::displayID() const { return display_id; }
+SDL_DisplayOrientation WSDC::Managers::Events::displayOrientation() const { return display_orientation; }
 
-} // WSDC
+// Text input
+const std::string& WSDC::Managers::Events::textInput() const { return text_input; }
+const std::string& WSDC::Managers::Events::textEditing() const { return text_editing; }
+
+// Touch state
+const std::unordered_map<SDL_FingerID, WSDC::Event::TouchFinger>& WSDC::Managers::Events::touchFingers() const { return touch_fingers; }
+
+// Pen state
+float WSDC::Managers::Events::penX() const { return pen_x; }
+float WSDC::Managers::Events::penY() const { return pen_y; }
+WSDC::Core::Position<float> WSDC::Managers::Events::pen() const { return {pen_x, pen_y}; }
+float WSDC::Managers::Events::penPressure() const { return pen_pressure; }
+float WSDC::Managers::Events::penTiltX() const { return pen_tilt_x; }
+float WSDC::Managers::Events::penTiltY() const { return pen_tilt_y; }
+WSDC::Core::Position<float> WSDC::Managers::Events::penTilt() const { return {pen_tilt_x, pen_tilt_y}; }
+SDL_PenID WSDC::Managers::Events::penID() const { return pen_id; }
+
+// Gamepad state
+const std::unordered_set<SDL_JoystickID>& WSDC::Managers::Events::activeGamepads() const { return active_gamepads; }
+
+// Joystick state
+const std::unordered_set<SDL_JoystickID>& WSDC::Managers::Events::activeJoysticks() const { return active_joysticks; }
+
+// Drop state
+const std::vector<std::string>& WSDC::Managers::Events::droppedFiles() const { return dropped_files; }
+const std::string& WSDC::Managers::Events::droppedText() const { return dropped_text; }
+float WSDC::Managers::Events::dropX() const { return drop_x; }
+float WSDC::Managers::Events::dropY() const { return drop_y; }
+WSDC::Core::Position<float> WSDC::Managers::Events::drop() const { return {drop_x, drop_y}; }
+
+// Sensor state
+const std::vector<float>& WSDC::Managers::Events::sensorData() const { return sensor_data; }
+
+// Audio state
+SDL_AudioDeviceID WSDC::Managers::Events::audioDeviceID() const { return audio_device_id; }
+
+// Camera state
+SDL_CameraID WSDC::Managers::Events::cameraDeviceID() const { return camera_device_id; }
+
+// User event state
+void* WSDC::Managers::Events::userData1() const { return user_data1; }
+void* WSDC::Managers::Events::userData2() const { return user_data2; }
+int32_t WSDC::Managers::Events::userCode() const { return user_code; }

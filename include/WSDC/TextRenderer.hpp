@@ -1,45 +1,25 @@
 #pragma once
 
-#include <string>
-#include <unordered_map>
+#include "Definitions.hpp"
 
-#include "Core/Geometry.hpp"
-#include "Text/Font.hpp"
+WSDC::Managers::TextRenderer& WSDC::Managers::TextRenderer::renderer(SDL_Renderer*& ren) {
+    _renderer = ren;
+    return *this;
+}
 
-namespace WSDC {
+WSDC::Text::Font& WSDC::Managers::TextRenderer::operator[](const std::string& font_name) {
+    return fonts[font_name];
+}
 
-namespace Managers {
-
-
-class TextRenderer {
-    std::unordered_map<std::string, WSDC::Text::Font> fonts;
-    SDL_Renderer* _renderer;
+   SDL_FRect WSDC::Managers::TextRenderer::write(const std::string& font, const WSDC::Core::Position<float>& position, const std::string& text) {
+    if (_renderer == nullptr) {
+        throw std::runtime_error("[TextRenderer::write] write attempt with non-usable renderer");
+    }
     
-public:
-    TextRenderer& renderer(SDL_Renderer*& ren) {
-        _renderer = ren;
-        return *this;
-    }
+    return fonts.at(font).write(_renderer, position, text);
+}
 
-    WSDC::Text::Font& operator[](const std::string& font_name) {
-        return fonts[font_name];
-    }
-
-    [[maybe_unused]] SDL_FRect write(const std::string& font, const WSDC::Core::Position<float>& position, const std::string& text) {
-        if (_renderer == nullptr) {
-            throw std::runtime_error("[TextRenderer::write] write attempt with non-usable renderer");
-        }
-        
-        return fonts.at(font).write(_renderer, position, text);
-    }
-
-    template <typename... Args>
-    [[maybe_unused]] SDL_FRect write(const std::string& f, const WSDC::Core::Position<float>& p, const std::string& t, Args... a) {
-        return this->write(f, p, WSDC::Format::format(t, a...));
-    }
-};
-
-
-} // Managers
-
-} // WSDC
+template <typename... Args>
+SDL_FRect WSDC::Managers::TextRenderer::write(const std::string& f, const WSDC::Core::Position<float>& p, const std::string& t, Args... a) {
+    return this->write(f, p, WSDC::Format::format(t, a...));
+}

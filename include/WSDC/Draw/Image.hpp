@@ -1,179 +1,52 @@
 #pragma once
 
-#include <string>
-#include <algorithm>
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_filesystem.h>
-#include <SDL3_image/SDL_image.h>
+#include "../Definitions.hpp"
 
-namespace WSDC {
+WSDC::Draw::TextureWrapper::TextureWrapper(SDL_Texture* other) {
+    ref = other;
+}
 
-namespace Draw {
-
-struct TextureWrapper {
-    SDL_Texture* ref;
-
-    TextureWrapper(SDL_Texture* other) {
-        ref = other;
+void WSDC::Draw::TextureWrapper::destroy() {
+    if (ref) {
+        SDL_DestroyTexture(ref);
+        ref = nullptr;
     }
+}
 
-    void destroy() {
-        if (ref) {
-            SDL_DestroyTexture(ref);
-            ref = nullptr;
-        }
+WSDC::Draw::TextureWrapper::~TextureWrapper() {
+    destroy();
+}
+
+SDL_Texture* WSDC::Draw::TextureWrapper::operator&(void) noexcept {
+    return ref;
+}
+
+WSDC::Draw::SDL_SurfaceWrapper::SDL_SurfaceWrapper(SDL_Surface* other) {
+    ref = other;
+}
+
+void WSDC::Draw::SDL_SurfaceWrapper::destroy() {
+    if (ref) {
+        SDL_DestroySurface(ref);
+        ref = nullptr;
     }
+}
 
-    ~TextureWrapper() {
-        destroy();
-    }
+WSDC::Draw::SDL_SurfaceWrapper::~SDL_SurfaceWrapper() {
+    destroy();
+}
 
-    SDL_Texture* operator&(void) noexcept {
-        return ref;
-    }
-};
+SDL_Surface* WSDC::Draw::SDL_SurfaceWrapper::operator&(void) noexcept {
+    return ref;
+}
 
+bool WSDC::Draw::SDL_SurfaceWrapper::operator!(void) const noexcept {
+    return ref == nullptr;
+}
 
-struct SDL_SurfaceWrapper {
-    SDL_Surface* ref;
-
-    SDL_SurfaceWrapper(SDL_Surface* other) {
-        ref = other;
-    }
-
-    void destroy() {
-        if (ref) {
-            SDL_DestroySurface(ref);
-            ref = nullptr;
-        }
-    }
-
-    ~SDL_SurfaceWrapper() {
-        destroy();
-    }
-
-    SDL_Surface* operator&(void) noexcept {
-        return ref;
-    }
-
-    bool operator!(void) const noexcept {
-        return ref == nullptr;
-    }
-
-    bool okay(void) const noexcept {
-        return ref != nullptr;
-    }
-};
-
-class Image {
-    const std::string base_path;
-    WSDC::Draw::SDL_SurfaceWrapper surface;
-    std::string filepath;
-    std::string extension;
-    int width;
-    int height;
-    bool loaded;
-    
-    // Caching for texture
-    mutable SDL_Texture* cached_texture;
-    mutable SDL_Renderer* cached_renderer;
-
-    // Extract file extension from path
-    std::string getExtension(const std::string&);
-
-    // Get the full file path
-    std::string getFullPath(const std::string&) const;
-    
-    // Clear texture cache
-    void clearTextureCache();
-
-public:
-    Image();
-
-    Image(SDL_Surface*);
-
-    Image(const std::string&);
-
-    ~Image();
-
-    // Load image from file
-    bool load(const std::string&);
-
-    // Free the surface and cached texture
-    void free();
-
-    // Get as SDL_Surface (CPU memory) - returns the internal surface
-    SDL_Surface* getSurface() const;
-
-    // Get as SDL_Texture (GPU memory) - CACHED version
-    // Returns cached texture if available for the same renderer
-    SDL_Texture* getTexture(SDL_Renderer*) const;
-    
-    // Force recreate texture (useful if surface was modified)
-    SDL_Texture* recreateTexture(SDL_Renderer*);
-
-    // Load directly as texture (more efficient if you don't need the surface)
-    WSDC::Draw::TextureWrapper loadAsTexture(SDL_Renderer*&, const std::string&);
-
-    // Get scaled surface
-    WSDC::Draw::SDL_SurfaceWrapper getScaledSurface(int, int, SDL_ScaleMode) const;
-
-    // Convert surface to different pixel format
-    WSDC::Draw::SDL_SurfaceWrapper convertSurface(SDL_PixelFormat) const;
-
-    // Get raw pixel data
-    void* getPixels() const;
-
-    // Get pitch (bytes per row)
-    int getPitch() const;
-
-    // Get pixel format
-    SDL_PixelFormat getFormat() const;
-
-    // Blit to another surface
-    bool blitTo(SDL_Surface*, const SDL_Rect*, SDL_Rect*) const;
-
-    // Blit with scaling
-    bool blitScaledTo(SDL_Surface*, const SDL_Rect*, SDL_Rect*, SDL_ScaleMode) const;
-
-    // Save as BMP
-    bool saveBMP(const std::string&) const;
-
-    // Getters
-    int getWidth() const;
-    int getHeight() const;
-    bool isLoaded() const;
-    std::string getFilepath() const;
-    std::string getExtension() const;
-    std::string getBasePath() const;
-
-    // Set color modulation
-    bool setColorMod(Uint8, Uint8, Uint8);
-
-    // Get color modulation
-    bool getColorMod(Uint8*, Uint8*, Uint8*);
-
-    // Set alpha modulation
-    bool setAlphaMod(Uint8);
-
-    // Get alpha modulation
-    bool getAlphaMod(Uint8*) const;
-
-    // Set blend mode
-    bool setBlendMode(SDL_BlendMode);
-
-    // Get blend mode
-    bool getBlendMode(SDL_BlendMode*) const;
-
-    // Lock surface for direct pixel access
-    bool lock();
-
-    // Unlock surface
-    void unlock();
-
-    // Crop image
-    Image crop(const WSDC::Geo::Rect<int>& rect) const;
-};
+bool WSDC::Draw::SDL_SurfaceWrapper::okay(void) const noexcept {
+    return ref != nullptr;
+}
 
 std::string WSDC::Draw::Image::getExtension(const std::string& path) {
     size_t dot_pos = path.find_last_of('.');
@@ -424,7 +297,7 @@ bool WSDC::Draw::Image::setColorMod(Uint8 r, Uint8 g, Uint8 b) {
     return SDL_SetSurfaceColorMod(surface.ref, r, g, b);
 }
 
-bool WSDC::Draw::Image::getColorMod(Uint8* r, Uint8* g, Uint8* b) {
+bool WSDC::Draw::Image::getColorMod(Uint8*& r, Uint8*& g, Uint8*& b) {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");
     }
@@ -438,11 +311,25 @@ bool WSDC::Draw::Image::setAlphaMod(Uint8 a) {
     return SDL_SetSurfaceAlphaMod(surface.ref, a);
 }
 
-bool WSDC::Draw::Image::getAlphaMod(Uint8* a) const {
+bool WSDC::Draw::Image::getAlphaMod(Uint8*& a) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getAlphaMod] Image is not loaded or surface is not set");
     }
     return SDL_GetSurfaceAlphaMod(surface.ref, a);
+}
+
+WSDC::Core::Color WSDC::Draw::Image::getColorMod() {
+    if (!loaded || !surface.okay()) {
+        throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");
+    }
+
+    Uint8 *r, *g, *b, *a;
+    if (SDL_GetSurfaceColorMod(surface.ref, r, g, b) == false ||
+        SDL_GetSurfaceAlphaMod(surface.ref, a) == false) {
+        throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");
+    }
+
+    return { *r, *g, *b, *a };
 }
 
 bool WSDC::Draw::Image::setBlendMode(SDL_BlendMode mode) {
@@ -452,7 +339,7 @@ bool WSDC::Draw::Image::setBlendMode(SDL_BlendMode mode) {
     return SDL_SetSurfaceBlendMode(surface.ref, mode);
 }
 
-bool WSDC::Draw::Image::getBlendMode(SDL_BlendMode* mode) const {
+bool WSDC::Draw::Image::getBlendMode(SDL_BlendMode*& mode) const {
     if (!loaded || !surface.okay()) {
         throw std::runtime_error("[Image::getBlendMode] Image is not loaded or surface is not set");
     }
@@ -486,7 +373,3 @@ WSDC::Draw::Image WSDC::Draw::Image::crop(const WSDC::Geo::Rect<int>& rect) cons
     SDL_BlitSurface(surface.ref, &rect.get<SDL_Rect>(), cropped, nullptr);
     return WSDC::Draw::Image(cropped);
 }
-
-} // Draw
-
-} // WSDC

@@ -3,45 +3,31 @@
 #include <SDL3/SDL_video.h>
 #include <functional>
 
-#include "../Events.hpp"
-#include "../Window.hpp"
-
-namespace WSDC {
-
-namespace Managers {
+#include "../Definitions.hpp"
 
 template <class... Others>
-class Scene {
-    using scene_raw_t = std::function<void(WSDC::Display::Window&, WSDC::Managers::Events&, Others&...)>;
-    scene_raw_t scene;
+WSDC::Managers::Scene<Others...>::Scene(const WSDC::Managers::Scene<Others...>::scene_raw_t& scn) {
+    scene = scn;
+}
 
-public:
-    Scene(const scene_raw_t& scn) {
-        scene = scn;
-    }
+template <class... Others>
+WSDC::Managers::Scene<Others...>::scene_raw_t& WSDC::Managers::Scene<Others...>::get() {
+    return scene;
+}
 
-    Scene() {}
-    ~Scene() {}
+template <class... Others>
+WSDC::Managers::Scene<Others...>::scene_raw_t& WSDC::Managers::Scene<Others...>::operator*(void) {
+    return scene;
+}
 
-    scene_raw_t& get() {
-        return scene;
-    }
-
-    scene_raw_t& operator*(void) {
-        return scene;
-    }
-
-Scene& run(WSDC::Display::Window& w, WSDC::Managers::Events& e, Others&... a) {
+template <class... Others>
+WSDC::Managers::Scene<Others...>& WSDC::Managers::Scene<Others...>::run(WSDC::Display::Window& w, WSDC::Managers::Events& e, Others&... a) {
     scene(w, e, a...); // WEA!!!
     return *this;
 }
 
-    Scene& operator=(const scene_raw_t& other) {
-        scene = other;
-        return *this;
-    }
-};
-
-} // Managers
-
-} // WSDC
+template <class... Others>
+WSDC::Managers::Scene<Others...>& WSDC::Managers::Scene<Others...>::operator=(const WSDC::Managers::Scene<Others...>::scene_raw_t& other) {
+    scene = other;
+    return *this;
+}

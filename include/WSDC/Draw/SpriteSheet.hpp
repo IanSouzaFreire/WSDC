@@ -1,32 +1,9 @@
 #pragma once
 
-#include <optional>
-
-#include "../Core/Types.hpp"
+#include "../Definitions.hpp"
+#include "../Core/Geometry.hpp"
+#include "../Core/Size.hpp"
 #include "Image.hpp"
-
-namespace WSDC {
-
-namespace Draw {
-
-
-class SpriteSheet {
-    Image _sprite_sheet;
-    WSDC::Core::Size<int> _offset;
-    WSDC::Core::Size<int> _separation;
-    WSDC::Core::Size<int> _sprite_size;
-
-public:
-    // configuration
-    SpriteSheet& offset(const int&, const int&) noexcept;
-    SpriteSheet& separator(const int&, const int&) noexcept;
-    SpriteSheet& size(const int&, const int&) noexcept;
-
-    // handle sheet
-    SpriteSheet& load(const char* filepath);
-
-    std::optional<WSDC::Draw::Image> operator()(const int& index_x, const int& index_y) const;
-};
 
 WSDC::Draw::SpriteSheet& WSDC::Draw::SpriteSheet::offset(const int& px_w, const int& px_h) noexcept {
     _offset.w = px_w;
@@ -60,8 +37,3 @@ std::optional<WSDC::Draw::Image> WSDC::Draw::SpriteSheet::operator()(const int& 
     
     return std::make_optional(_sprite_sheet.crop(rect));
 }
-
-
-} // Draw
-
-} // WSDC

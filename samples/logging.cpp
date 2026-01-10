@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
     namespace Styles = Log::Styles;
     
     if (argc < 5) {
-        Log::print({ Core::rgb(RED), nullptr, Styles::bold }, "PLEASE");
+        Log::print({ rgb(RED), nullptr, Styles::bold }, "PLEASE");
         Log::println(" use: {size} {d1} {d2} {d3}");
         return 0;
     }
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
             const Core::rgb_t r = (x * y * d1) % 256,
                               g = (x * y * d2) % 256,
                               b = (x * y * d3) % 256;
-            Log::print({ nullptr, Core::rgb(r, g, b), Styles::none }, " ");
+            Log::print({ nullptr, rgb(r, g, b), Styles::none }, " ");
         }
 
         Log::println("");

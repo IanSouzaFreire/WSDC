@@ -1,3 +1,4 @@
+#define WSDC_IMPLEMENT
 #include "WSDC.hpp"
 
 using namespace WSDC;
@@ -10,7 +11,6 @@ using namespace WSDC::Draw;
 int main(void) {
     Window main_win;
     Events events;
-    
     main_win.size(Ratio::r16_9, 70)
             .build()
             .setTitle("Hello world!");
@@ -24,8 +24,13 @@ int main(void) {
     
     auto texture = IMG.getTexture(main_win.raw.renderer);
 
-    while (!events.update().isInTypes(SDL_EVENT_QUIT)) {
-        main_win.drawRaw(SDL_RenderClear, Colors::WHITE_SMOKE)
+    bool exit = false;
+    while (!exit) {
+        events.update();
+
+        exit = events & Event::EXIT;
+        
+        main_win.drawRaw(SDL_RenderClear, Colors["White"])
                 .renderRaw(SDL_RenderTexture, &texture, nullptr, &imgp.get<SDL_FRect>())
                 .update();
     }
