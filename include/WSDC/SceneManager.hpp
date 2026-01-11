@@ -1,63 +1,6 @@
 #pragma once
 
-#include <map>
-#include <string>
-#include <stdexcept>
-#include <tuple>
-
 #include "Definitions.hpp"
-#include "SceneManager/Scene.hpp"
-
-namespace WSDC {
-
-namespace Managers {
-
-template <class Key=std::string, class... ExtraData>
-class SceneManager {
-    using sig_function_t = std::function<void(WSDC::Display::Window&, ExtraData&...)>;
-    using SceneW = WSDC::Managers::Scene<ExtraData&...>;
-    using ExtraDataTuple = std::tuple<ExtraData*...>;
-
-    std::map<Key, SceneW> scenes;
-    std::map<Key, sig_function_t> on_change;
-
-    SceneW* current_scene;
-    WSDC::Display::Window* current_window;
-    WSDC::Managers::Events* current_events;
-    ExtraDataTuple current_outdata;
-
-public:
-    SceneManager() : current_scene(nullptr), current_window(nullptr), 
-                     current_events(nullptr), current_outdata() {}
-    ~SceneManager() {}
-
-    SceneW& createScene(const Key&, const bool&);
-    SceneW& createScene(const Key&);
-    SceneW& scene(const Key&);
-    SceneW& createSceneWithSignal(const Key&, const bool&, const sig_function_t&);
-    SceneW& createSceneWithSignal(const Key&, const sig_function_t&);
-    SceneW& sceneWithSignal(const Key&, const bool&, const sig_function_t&);
-    
-    SceneManager<Key, ExtraData...>& extra(ExtraData&...);
-    SceneManager<Key, ExtraData...>& window(WSDC::Display::Window&);
-    SceneManager<Key, ExtraData...>& events(WSDC::Managers::Events&);
-    
-    void changeTo(const Key&);
-    sig_function_t& onChangeTo(const Key&);
-
-    SceneManager<Key, ExtraData...>& run();
-
-private:
-    template<std::size_t... Is>
-    void callOnChange(const Key& key, std::index_sequence<Is...>) {
-        on_change[key](*current_window, *std::get<Is>(current_outdata)...);
-    }
-
-    template<std::size_t... Is>
-    void callSceneRun(std::index_sequence<Is...>) {
-        current_scene->run(*current_window, *current_events, *std::get<Is>(current_outdata)...);
-    }
-};
 
 template <class Key, class... ExtraData>
 WSDC::Managers::Scene<ExtraData&...>& WSDC::Managers::SceneManager<Key, ExtraData...>::createScene(const Key& key, const bool& _default) {
@@ -172,7 +115,3 @@ WSDC::Managers::SceneManager<Key, ExtraData...>& WSDC::Managers::SceneManager<Ke
     callSceneRun(std::index_sequence_for<ExtraData...>{});
     return *this;
 }
-
-} // Managers
-
-} // WSDC

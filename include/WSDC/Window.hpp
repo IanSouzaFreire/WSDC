@@ -1,14 +1,6 @@
 #pragma once
 
-#include <stdexcept>
-#include <string>
-#include <cstdlib>
-
 #include "Definitions.hpp"
-#include "Core/Size.hpp"
-#include "Core/Utils.hpp"
-#include "Core/Color.hpp"
-#include "Draw/Image.hpp"
 
 namespace WSDC::Display {
     volatile SDL_VIDEO_Quitter _WSDC_sdl_video_quitter = SDL_VIDEO_Quitter();

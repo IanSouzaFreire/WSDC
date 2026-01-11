@@ -5,7 +5,6 @@
 #include <functional>
 
 #include "../Definitions.hpp"
-#include "../Core/Color.hpp"
 
 WSDC::Entity::Button::Button() :
     _use_text(false),
@@ -13,8 +12,8 @@ WSDC::Entity::Button::Button() :
     _is_in_area(false),
     _last_check(false),
     _last_click_state(false),
-    _bg(WSDC::Colors::FUCHSIA),
-    _fg(WSDC::Colors::EIGENGRAU),
+    _bg(WSDC::Core::Color( 255, 0, 0, 255 )),
+    _fg(WSDC::Core::Color( 0, 0, 255, 255 )),
     _font(nullptr),
     _img(nullptr),
     _prect({0, 0, 0, 0}),
@@ -49,12 +48,12 @@ WSDC::Entity::Button& WSDC::Entity::Button::useImg(const bool& b) noexcept {
 }
 
 WSDC::Entity::Button& WSDC::Entity::Button::font(WSDC::Text::Font& fo) noexcept {
-    _font = fo;
+    _font = &fo;
     return *this;
 }
 
 WSDC::Entity::Button& WSDC::Entity::Button::font(WSDC::Text::Font*& fo) noexcept {
-    _font = *fo;
+    _font = fo;
     return *this;
 }
 
@@ -154,9 +153,9 @@ void WSDC::Entity::Button::render(SDL_Renderer*& ren, const std::string& text) {
     int actual_width = 0;
     int actual_height = 0;
 
-    _font.prepareContext(ren, surf, texr, text, actual_width, actual_height);
+    _font->prepareContext(ren, surf, texr, text, actual_width, actual_height);
 
-    if (_font._style.align == WSDC::Text::Align::CENTER) {
+    if (_font->_style.align == WSDC::Text::Align::CENTER) {
         _prect.x = btn_pos.x - (static_cast<float>(actual_width) / 2);
     } else {
         _prect.x = btn_pos.x;

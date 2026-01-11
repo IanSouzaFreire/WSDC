@@ -1,23 +1,6 @@
 #pragma once
 
-#include <unordered_set>
-#include <unordered_map>
-#include <vector>
-#include <cstdint>
-#include <string>
-#include <SDL3/SDL_events.h>
-
 #include "Definitions.hpp"
-#include "Events/Mapping.hpp"
-
-/* Usage:
-events.update();
-    
-if (events & __EVENT_TYPE__::__EVENT__) {
-    #action#
-}
-
-*/
 
 WSDC::Managers::Events& WSDC::Managers::Events::update() {
     mouse_flags = 0;

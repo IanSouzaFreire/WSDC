@@ -323,7 +323,7 @@ WSDC::Core::Color WSDC::Draw::Image::getColorMod() {
         throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");
     }
 
-    Uint8 *r, *g, *b, *a;
+    Uint8 *r=nullptr, *g=nullptr, *b=nullptr, *a=nullptr;
     if (SDL_GetSurfaceColorMod(surface.ref, r, g, b) == false ||
         SDL_GetSurfaceAlphaMod(surface.ref, a) == false) {
         throw std::runtime_error("[Image::getColorMod] Image is not loaded or surface is not set");

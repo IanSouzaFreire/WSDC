@@ -11,7 +11,6 @@
 #include "WSDC/Core/Math.hpp"
 #include "WSDC/Core/Position.hpp"
 #include "WSDC/Core/Size.hpp"
-#include "WSDC/Core/Types.hpp"
 #include "WSDC/Core/Utils.hpp"
 
 #endif

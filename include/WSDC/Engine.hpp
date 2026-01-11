@@ -5,7 +5,7 @@
 template <class Key, class... ExtraData>
 WSDC::Engine<Key, ExtraData...>::Engine() : is_running(false) {
     try {
-        sub_windows.root(&display);
+        sub_windows.root(display);
         manager.window(display).events(events);
         text.renderer(display.raw.renderer);
     } catch (...) {
@@ -160,21 +160,13 @@ template <class Key, class... ExtraData>
 void WSDC::Engine<Key, ExtraData...>::quit(void) {
     is_running = false;
     display.close();
-
-    for (auto& win : sub_windows) {
-        win.close();
-    }
+    sub_windows.close_all();
 }
 
 template <class Key, class... ExtraData>
 void WSDC::Engine<Key, ExtraData...>::update(void) {
     display.update();
-
-    if (!sub_windows.empty()) {
-        for (auto& d : sub_windows) {
-            d.update();
-        }
-    }
+    sub_windows.update_all();
 }
 
 template <class Key, class... ExtraData>

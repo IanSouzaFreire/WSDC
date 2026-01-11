@@ -6,20 +6,51 @@
 #include <cstddef>
 #include <unordered_set>
 #include <unordered_map>
+#include <cstdlib>
 #include <cstdint>
 #include <variant>
+#include <vector>
+#include <string>
 #include <functional>
 #include <optional>
 #include <stdexcept>
 #include <algorithm>
 #include <atomic>
 #include <thread>
+#include <map>
+#include <tuple>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_events.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
 
 namespace WSDC {
 
+
+namespace Geo {
+    template <typename RR>
+    struct SDL_RectWrapper {
+        RR* ref;
+
+        SDL_RectWrapper(const RR&);
+        void destroy();
+        ~SDL_RectWrapper();
+        RR* operator&(void) noexcept;
+    };
+
+    template <typename T>
+    struct Rect {
+        T x, y, w, h, &horizontal=x, &vertical=y, &width=w, &height=h;
+
+        template<typename S> WSDC::Geo::SDL_RectWrapper<S> get(void) const;
+        template<typename S> operator S() const;
+        template<typename Float_t> WSDC::Geo::Rect<T>& scale(const Float_t& sc) noexcept;
+    };
+}
+
+namespace Math {
+    template<typename T, typename I> constexpr T findD(I, I, I) noexcept;
+}
 
 namespace Core {
     namespace Ratio {
@@ -118,14 +149,30 @@ struct ConstStringColorMap {
     }
 };
 
-constexpr static WSDC::ConstStringColorMap<31868> Colors {
+constexpr static std::size_t palette_size = 
+#ifndef WSDC_BASIC_PALETTE
+31868
+#else
+6
+#endif
+;
+constexpr static WSDC::ConstStringColorMap<palette_size> Colors {
     #define DEFINE_NEW_COLOR(name, r, g, b) std::pair { std::string_view{name},\
-                                            WSDC::Core::Color(static_cast<WSDC::Core::rgb_t>(r),\
+                                            WSDC::Core::Color{static_cast<WSDC::Core::rgb_t>(r),\
                                                               static_cast<WSDC::Core::rgb_t>(g),\
                                                               static_cast<WSDC::Core::rgb_t>(b),\
-                                                              static_cast<WSDC::Core::rgb_t>(255))},
+                                                              static_cast<WSDC::Core::rgb_t>(255)}},
     std::array{
+        #ifndef WSDC_BASIC_PALETTE
         #include "Core/__COLORS__.hpp"
+        #else
+        DEFINE_NEW_COLOR("White", 255, 255, 255)
+        DEFINE_NEW_COLOR("Red", 255, 0, 0)
+        DEFINE_NEW_COLOR("Green", 0, 255, 0)
+        DEFINE_NEW_COLOR("Blue", 0, 0, 255)
+        DEFINE_NEW_COLOR("Gray", 127, 127, 127)
+        DEFINE_NEW_COLOR("Black", 0, 0, 0)
+        #endif
     }
     #undef DEFINE_NEW_COLOR
 };
@@ -170,6 +217,17 @@ namespace Display {
         ~SDL_VIDEO_Quitter();
     };
 
+    struct RawWindow {
+        WSDC::Core::Size<int> size;
+        WSDC::Core::Position<int> position;
+        std::string title, renderer_name;
+        SDL_WindowFlags flags{WSDC::Display::Flags::NONE};
+        SDL_Window* window;
+        SDL_Renderer* renderer;
+        SDL_AudioDeviceID audio_device;
+        RawWindow() = default;
+    };
+
     struct Window {
         WSDC::Display::Window& self = (*this);
         WSDC::Display::RawWindow raw;
@@ -208,18 +266,7 @@ namespace Display {
         float getHeight(const float&) const noexcept;
     };
 
-    struct RawWindow {
-        WSDC::Core::Size<int> size;
-        WSDC::Core::Position<int> position;
-        std::string title, renderer_name;
-        SDL_WindowFlags flags{WSDC::Display::Flags::NONE};
-        SDL_Window* window;
-        SDL_Renderer* renderer;
-        SDL_AudioDeviceID audio_device;
-        RawWindow() = default;
-    };
-
-    template <typename T>
+    /*template <typename T>
     class SubWindowAllocator {
     public:
         using value_type = T;
@@ -233,441 +280,24 @@ namespace Display {
         void deallocate(T* p, std::size_t n) noexcept {
             ::operator delete(p);
         }
-    };
+    };*/
 
     class SubWindows {
-        using SubWin_Allocator = std::vector<WSDC::Diplay::Window, WSDC::Diplay::SubWindowAllocator<WSDC::Diplay::Window>>;
-        WSDC::Diplay::Window *_root_window = nullptr;
-        SubWin_Allocator _sub_windows;
+        // using SubWin_Allocator = std::vector<WSDC::Display::Window, WSDC::Display::SubWindowAllocator<WSDC::Display::Window>>;
+        WSDC::Display::Window *_root_window = nullptr;
+        // SubWin_Allocator _sub_windows;
     public:
         SubWindows() = default;
         ~SubWindows() = default;
 
-        SubWindows(WSDC::Diplay::Window&) noexcept;
-        SubWindows(WSDC::Diplay::Window*&) noexcept;
-        SubWindows& root(WSDC::Diplay::Window&) noexcept;
-        SubWindows& root(WSDC::Diplay::Window*&) noexcept;
+        SubWindows(WSDC::Display::Window&) noexcept;
+        SubWindows(WSDC::Display::Window*&) noexcept;
+        SubWindows& root(WSDC::Display::Window&) noexcept;
+        SubWindows& root(WSDC::Display::Window*&) noexcept;
+
+        SubWindows& close_all() noexcept;
+        SubWindows& update_all() noexcept;
     };
-}
-
-namespace Managers {
-    class Events {
-        uint32_t mouse_flags    = 0, window_flags  = 0, system_flags    = 0, display_flags = 0,
-                 keyboard_flags = 0, gamepad_flags = 0, joystick_flags  = 0, touch_flags   = 0,
-                 pen_flags      = 0, audio_flags   = 0, camera_flags    = 0, sensor_flags  = 0,
-                 render_flags   = 0, drop_flags    = 0, clipboard_flags = 0, user_flags    = 0;
-        
-        // Keyboard state
-        const bool* key_states = nullptr;
-        std::unordered_set<SDL_Scancode> keys_pressed_this_frame;
-        std::unordered_set<SDL_Scancode> keys_released_this_frame;
-        
-        // Mouse state
-        float mouse_x = 0, mouse_y = 0;
-        float mouse_dx = 0, mouse_dy = 0;
-        float wheel_x = 0, wheel_y = 0;
-        uint32_t mouse_button_state = 0;
-        
-        // Window state
-        int window_width = 0, window_height = 0;
-        SDL_WindowID window_id = 0;
-        
-        // Display state
-        SDL_DisplayID display_id = 0;
-        SDL_DisplayOrientation display_orientation = SDL_ORIENTATION_UNKNOWN;
-        
-        // Gamepad state
-        std::unordered_map<SDL_JoystickID, SDL_GamepadAxis> gamepad_axes;
-        std::unordered_map<SDL_JoystickID, SDL_GamepadButton> gamepad_buttons;
-        std::unordered_set<SDL_JoystickID> active_gamepads;
-        
-        // Joystick state
-        std::unordered_map<SDL_JoystickID, int> joystick_axes;
-        std::unordered_map<SDL_JoystickID, int> joystick_buttons;
-        std::unordered_set<SDL_JoystickID> active_joysticks;
-        
-        // Touch state
-        std::unordered_map<SDL_FingerID, WSDC::Event::TouchFinger> touch_fingers;
-        
-        // Pen state
-        float pen_x = 0, pen_y = 0;
-        float pen_pressure = 0;
-        float pen_tilt_x = 0, pen_tilt_y = 0;
-        SDL_PenID pen_id = 0;
-        
-        // Text input
-        std::string text_input;
-        std::string text_editing;
-        
-        // Drop state
-        std::vector<std::string> dropped_files;
-        std::string dropped_text;
-        float drop_x = 0, drop_y = 0;
-        
-        // Sensor state
-        std::vector<float> sensor_data;
-        
-        // Audio state
-        SDL_AudioDeviceID audio_device_id = 0;
-        
-        // Camera state
-        SDL_CameraID camera_device_id = 0;
-        
-        // User event state
-        void* user_data1 = nullptr;
-        void* user_data2 = nullptr;
-        int32_t user_code = 0;
-
-    public:
-        WSDC::Managers::Events& update();
-        
-        // Operator overloads for flag checking
-        bool operator&(WSDC::Event::Mouse) const;
-        bool operator&(WSDC::Event::Window) const;
-        bool operator&(WSDC::Event::System) const;
-        bool operator&(WSDC::Event::Display) const;
-        bool operator&(WSDC::Event::Keyboard) const;
-        bool operator&(WSDC::Event::Gamepad) const;
-        bool operator&(WSDC::Event::Joystick) const;
-        bool operator&(WSDC::Event::Touch) const;
-        bool operator&(WSDC::Event::Pen) const;
-        bool operator&(WSDC::Event::Audio) const;
-        bool operator&(WSDC::Event::Camera) const;
-        bool operator&(WSDC::Event::Sensor) const;
-        bool operator&(WSDC::Event::Render) const;
-        bool operator&(WSDC::Event::Drop) const;
-        bool operator&(WSDC::Event::Clipboard) const;
-        bool operator&(WSDC::Event::User) const;
-        template <class EV> bool isEvent(EV);
-        
-        // Keyboard queries
-        bool isKeyHeld(SDL_Scancode sc) const;
-        bool isKeyPressed(SDL_Scancode sc) const;
-        bool isKeyReleased(SDL_Scancode sc) const;
-        
-        // Mouse state
-        float mouseX() const;
-        float mouseY() const;
-        WSDC::Core::Position<float> mouse() const;
-        float mouseDX() const;
-        float mouseDY() const;
-        WSDC::Core::Position<float> mouseDelta() const;
-        float wheelX() const;
-        float wheelY() const;
-        WSDC::Core::Position<float> wheel() const;
-        uint32_t mouseButtonState() const;
-        
-        // Window state
-        int windowWidth() const;
-        int windowHeight() const;
-        WSDC::Core::Size<int> window() const;
-        SDL_WindowID windowID() const;
-        
-        // Display state
-        SDL_DisplayID displayID() const;
-        SDL_DisplayOrientation displayOrientation() const;
-        
-        // Text input
-        const std::string& textInput() const;
-        const std::string& textEditing() const;
-        
-        // Touch state
-        const std::unordered_map<SDL_FingerID, WSDC::Event::TouchFinger>& touchFingers() const;
-        
-        // Pen state
-        float penX() const;
-        float penY() const;
-        WSDC::Core::Position<float> pen() const;
-        float penPressure() const;
-        float penTiltX() const;
-        float penTiltY() const;
-        WSDC::Core::Position<float> penTilt() const;
-        SDL_PenID penID() const;
-        
-        // Gamepad state
-        const std::unordered_set<SDL_JoystickID>& activeGamepads() const;
-        
-        // Joystick state
-        const std::unordered_set<SDL_JoystickID>& activeJoysticks() const;
-        
-        // Drop state
-        const std::vector<std::string>& droppedFiles() const;
-        const std::string& droppedText() const;
-        float dropX() const;
-        float dropY() const;
-        WSDC::Core::Position<float> drop() const;
-        
-        // Sensor state
-        const std::vector<float>& sensorData() const;
-        
-        // Audio state
-        SDL_AudioDeviceID audioDeviceID() const;
-        
-        // Camera state
-        SDL_CameraID cameraDeviceID() const;
-        
-        // User event state
-        void* userData1() const;
-        void* userData2() const;
-        int32_t userCode() const;
-    };
-
-    template <class... Others>
-    class Scene {
-        using scene_raw_t = std::function<void(WSDC::Display::Window&, WSDC::Managers::Events&, Others&...)>;
-        scene_raw_t scene;
-
-    public:
-        Scene(const scene_raw_t&);
-        Scene() = default;
-        ~Scene() = default;
-
-        scene_raw_t& get();
-        scene_raw_t& operator*(void);
-
-        Scene& run(WSDC::Display::Window&, WSDC::Managers::Events&, Others&...);
-
-        Scene& operator=(const scene_raw_t&);
-    };
-
-    template<class, class...> class SceneManager;
-
-    class TextRenderer {
-        std::unordered_map<std::string, WSDC::Text::Font> fonts;
-        SDL_Renderer* _renderer;
-        
-    public:
-        TextRenderer& renderer(SDL_Renderer*&);
-        WSDC::Text::Font& operator[](const std::string&);
-        [[maybe_unused]] SDL_FRect write(const std::string&, const WSDC::Core::Position<float>&, const std::string&);
-        template<typename... Args> [[maybe_unused]] SDL_FRect write(const std::string& f, const WSDC::Core::Position<float>&, const std::string&, Args...);
-    };
-}
-
-namespace Text {
-    using Alignment = TTF_HorizontalAlignment;
-    namespace Align {
-        #define DEFINE_NEW_ALIGNMENT(n, v) constexpr static WSDC::Text::Alignment n = v;
-        DEFINE_NEW_ALIGNMENT(LEFT,   TTF_HORIZONTAL_ALIGN_LEFT)
-        DEFINE_NEW_ALIGNMENT(CENTER, TTF_HORIZONTAL_ALIGN_CENTER)
-        DEFINE_NEW_ALIGNMENT(RIGHT,  TTF_HORIZONTAL_ALIGN_RIGHT)
-        DEFINE_NEW_ALIGNMENT(NONE,   TTF_HORIZONTAL_ALIGN_INVALID)
-        #undef DEFINE_NEW_ALIGNMENT
-    }
-
-    using Weight = uint32_t;
-    enum class Weights : WSDC::Text::Weight {
-        THIN      = TTF_FONT_WEIGHT_THIN,
-        LIGHTER   = TTF_FONT_WEIGHT_EXTRA_LIGHT,
-        LIGHT     = TTF_FONT_WEIGHT_LIGHT,
-        NORMAL    = TTF_FONT_WEIGHT_NORMAL,
-        MEDIUM    = TTF_FONT_WEIGHT_MEDIUM,
-        SEMI_BOLD = TTF_FONT_WEIGHT_SEMI_BOLD,
-        BOLD      = TTF_FONT_WEIGHT_BOLD,
-        BOLDER    = TTF_FONT_WEIGHT_EXTRA_BOLD,
-        EXTRA     = TTF_FONT_WEIGHT_BLACK,
-        GIGA      = TTF_FONT_WEIGHT_EXTRA_BLACK
-    };
-
-    using Style = TTF_FontStyleFlags;
-    enum class Styles : WSDC::Text::Weight {
-        NORMAL    = TTF_STYLE_NORMAL,
-        BOLD      = TTF_STYLE_BOLD,
-        ITALIC    = TTF_STYLE_ITALIC,
-        UNDERLINE = TTF_STYLE_UNDERLINE,
-        STRIKE    = TTF_STYLE_STRIKETHROUGH
-    };
-
-    struct FontStyle {
-        float size;
-        WSDC::Text::Weights weight;
-        WSDC::Text::Styles style;
-        WSDC::Text::Alignment align;
-        WSDC::Core::Color color;
-
-        FontStyle();
-
-        // cache comparison
-        bool operator==(const FontStyle&) const;
-        bool operator!=(const FontStyle&) const;
-        
-        // Helper
-        static FontStyle withSize(float s);
-        static FontStyle withColor(const WSDC::Core::Color&);
-        static FontStyle withWeight(const WSDC::Text::Weights&);
-        
-        // Preset styles
-        static FontStyle heading();
-        static FontStyle subheading();
-        static FontStyle body();
-        static FontStyle small();
-        
-        // chaining
-        FontStyle& setSize(float s);
-        FontStyle& setColor(const WSDC::Core::Color&);
-        FontStyle& setWeight(const WSDC::Text::Weights&);
-        FontStyle& setStyle(const WSDC::Text::Styles&);
-        FontStyle& setAlign(const WSDC::Text::Alignment&);
-    };
-
-    struct CachedText {
-        SDL_Surface* surface;
-        SDL_Texture* texture;
-        SDL_Renderer* renderer;
-        std::string text;
-        WSDC::Text::FontStyle style;
-        int actual_width;
-        int actual_height;
-        
-        CachedText();
-        ~CachedText();
-        void clear();
-        bool matches(const std::string&, const WSDC::Text::FontStyle&, SDL_Renderer*) const;
-    };
-
-    class Font {
-        TTF_Font* raw = nullptr;
-        std::string _filepath;
-        WSDC::Text::FontStyle _style;
-        
-        mutable WSDC::Text::CachedText cache;
-
-        void prepareContext(SDL_Renderer*&, SDL_Surface*&, SDL_Texture*&, const std::string&, int&, int&);
-        void clearCache();
-        void applyStyesToFont();
-
-    public:
-        friend class WSDC::Entity::Button;
-        
-        Font(void);
-        ~Font(void);
-
-        WSDC::Text::Font& close(void);
-        WSDC::Text::Font& unload(void);
-
-        WSDC::Text::Font& color(const WSDC::Core::Color&);
-        WSDC::Core::Color& color(void);
-
-        WSDC::Text::Font& size(const float& size);
-        float& size(void);
-
-        WSDC::Text::Font& weight(const WSDC::Text::Weights&);
-        WSDC::Text::Weights& weight(void);
-
-        WSDC::Text::Font& style(const WSDC::Text::Styles&);
-        WSDC::Text::Styles& style(void);
-
-        WSDC::Text::Font& align(const WSDC::Text::Alignment&);
-
-        WSDC::Text::Font& load(const std::string&);
-        std::string& filepath(void);
-
-        WSDC::Text::Font& styles(const WSDC::Text::FontStyle&);
-        WSDC::Text::FontStyle& styles(void);
-
-        [[maybe_unused]] SDL_FRect write(SDL_Renderer*, const WSDC::Core::Position<float>&, const std::string&);
-        template<typename... Args> [[maybe_unused]] SDL_FRect write(SDL_Renderer*, const WSDC::Core::Position<float>&, const std::string&, Args...);
-        
-        // Get text dimensions without rendering
-        SDL_FRect measureText(const std::string&);
-        
-        // Get font height
-        int getHeight() const;
-        
-        // Get font ascent
-        int getAscent() const;
-        
-        // Get font descent
-        int getDescent() const;
-        
-        // Check if font is loaded
-        bool isLoaded() const;
-        
-        // Force cache clear
-        WSDC::Text::Font& invalidateCache();
-    };
-
-    struct TTF_Quitter {
-        ~TTF_Quitter();
-    };
-}
-
-namespace Entity {
-    class Button : public WSDC::Geo::Rect<float> {
-        bool _use_text, _use_bg_image, _is_in_area,
-             _last_check, _last_click_state;
-        WSDC::Core::Color _bg, _fg;
-        WSDC::Text::Font* _font;
-        WSDC::Draw::Image* _img;
-        SDL_FRect _prect;
-
-    public:
-        std::function<void(void)> onClick, onRelease, onHover, onLeave;
-
-        Button();
-        ~Button();
-
-        WSDC::Entity::Button& set(const WSDC::Geo::Rect<float>&);
-        WSDC::Entity::Button& useText(const bool&) noexcept;
-        WSDC::Entity::Button& useImg(const bool&) noexcept;
-        WSDC::Entity::Button& font(WSDC::Text::Font&) noexcept;
-        WSDC::Entity::Button& font(WSDC::Text::Font*&) noexcept;
-
-        WSDC::Draw::Image& img(const std::string&) noexcept;
-        WSDC::Draw::Image& img();
-
-        WSDC::Core::Color& bg() noexcept;
-        WSDC::Entity::Button& bg(const WSDC::Core::Color&) noexcept;
-
-        WSDC::Core::Color& fg() noexcept;
-        WSDC::Entity::Button& fg(const WSDC::Core::Color&) noexcept;
-
-        bool isAlignedHorizontal(const SDL_FRect&) noexcept;
-        bool isAlignedVertical(const SDL_FRect&) noexcept;
-        bool isInArea(const SDL_FRect&) noexcept;
-
-        void check(const WSDC::Core::Position<float>, const bool&);
-
-        void render(SDL_Renderer*&, const std::string&);
-    };
-}
-
-namespace Format {
-    template<std::size_t, typename... Ts> std::variant<Ts...> tuple_runtime_get(std::size_t, const std::tuple<Ts...>&);
-    template<typename T> constexpr std::string to_string_any(const T&);
-    template<typename... Types> constexpr std::string format(const std::string&, const Types&...);
-    inline std::string format(const std::string&) noexcept;
-    template<typename... Args> void format_p(std::string&, Args...);
-}
-
-namespace Log {
-    using Style = uint8_t;
-    namespace Styles {}
-
-    struct TextStyle {
-        WSDC::Core::Color  *fg = nullptr,
-                           *bg = nullptr;
-        WSDC::Log::Style style = 0;
-        
-        bool has(const WSDC::Log::Style& s) const;
-    };
-
-    std::string style_to_esc(const WSDC::Log::TextStyle&);
-    inline std::string toLink(const std::string&);
-    inline std::string toLink(const std::string&, const std::string&);
-    inline std::string toLink(WSDC::Log::TextStyle&&, const std::string&, const std::string&);
-    inline std::string toLink(WSDC::Log::TextStyle&&, const std::string&);
-    void print(const std::string&);
-    void println(const std::string&);
-    void print(WSDC::Log::TextStyle&&, const std::string&);
-    void println(TextStyle&&, const std::string&);
-    template<typename... Args> void print(TextStyle&&, const std::string&, Args...);
-    template<typename... Args> void println(TextStyle&&, const std::string&, Args...);
-    template<typename... Args> void print(const std::string&, Args...);
-    template<typename... Args> void println(const std::string&, Args...);
-    void setPointerPosition(const int32_t&, const int32_t&);
-    void setPointerPosition(const WSDC::Core::Position<int32_t>&);
-    void clear();
 }
 
 namespace Event {
@@ -893,27 +523,47 @@ namespace Event {
     #undef CAST
 }
 
+// Bitwise operators for all flag enums
+#define DEFINE_FLAG_OPERATORS(EnumType) \
+inline EnumType operator|(EnumType a, EnumType b) noexcept { \
+    return static_cast<EnumType>(static_cast<WSDC::Event::flag_t>(a) | static_cast<WSDC::Event::flag_t>(b)); \
+} \
+inline EnumType operator&(EnumType a, EnumType b) noexcept { \
+    return static_cast<EnumType>(static_cast<WSDC::Event::flag_t>(a) & static_cast<WSDC::Event::flag_t>(b)); \
+} \
+inline EnumType& operator|=(EnumType& a, EnumType b) noexcept { \
+    return a = a | b; \
+} \
+inline EnumType& operator&=(EnumType& a, EnumType b) noexcept { \
+    return a = a & b; \
+}
+
+DEFINE_FLAG_OPERATORS(WSDC::Event::Mouse)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Window)
+DEFINE_FLAG_OPERATORS(WSDC::Event::System)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Display)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Keyboard)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Gamepad)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Joystick)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Touch)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Pen)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Audio)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Camera)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Sensor)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Render)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Drop)
+DEFINE_FLAG_OPERATORS(WSDC::Event::Clipboard)
+DEFINE_FLAG_OPERATORS(WSDC::Event::User)
+
+#undef DEFINE_FLAG_OPERATORS
+
+namespace Entity {
+    class Button;
+}
+
 namespace Draw {
     void clearScreen(SDL_Renderer*&, const WSDC::Core::Color&);
     void clearScreen(SDL_Window*&, const WSDC::Core::Color&);
-
-    class SpriteSheet {
-        Image _sprite_sheet;
-        WSDC::Core::Size<int> _offset;
-        WSDC::Core::Size<int> _separation;
-        WSDC::Core::Size<int> _sprite_size;
-
-    public:
-        // configuration
-        SpriteSheet& offset(const int&, const int&) noexcept;
-        SpriteSheet& separator(const int&, const int&) noexcept;
-        SpriteSheet& size(const int&, const int&) noexcept;
-
-        // handle sheet
-        SpriteSheet& load(const char*);
-
-        std::optional<WSDC::Draw::Image> operator()(const int&, const int&) const;
-    };
 
     struct TextureWrapper {
         SDL_Texture* ref;
@@ -1002,6 +652,24 @@ namespace Draw {
 
         WSDC::Draw::Image crop(const WSDC::Geo::Rect<int>& rect) const;
     };
+
+    class SpriteSheet {
+        WSDC::Draw::Image _sprite_sheet;
+        WSDC::Core::Size<int> _offset;
+        WSDC::Core::Size<int> _separation;
+        WSDC::Core::Size<int> _sprite_size;
+
+    public:
+        // configuration
+        SpriteSheet& offset(const int&, const int&) noexcept;
+        SpriteSheet& separator(const int&, const int&) noexcept;
+        SpriteSheet& size(const int&, const int&) noexcept;
+
+        // handle sheet
+        SpriteSheet& load(const char*);
+
+        std::optional<WSDC::Draw::Image> operator()(const int&, const int&) const;
+    };
 }
 
 namespace Types {
@@ -1011,29 +679,469 @@ namespace Types {
     using index_t = uint64_t;
 }
 
-namespace Geo {
-    template <typename RR>
-    struct SDL_RectWrapper {
-        RR* ref;
+namespace Text {
+    using Alignment = TTF_HorizontalAlignment;
+    namespace Align {
+        #define DEFINE_NEW_ALIGNMENT(n, v) constexpr static WSDC::Text::Alignment n = v;
+        DEFINE_NEW_ALIGNMENT(LEFT,   TTF_HORIZONTAL_ALIGN_LEFT)
+        DEFINE_NEW_ALIGNMENT(CENTER, TTF_HORIZONTAL_ALIGN_CENTER)
+        DEFINE_NEW_ALIGNMENT(RIGHT,  TTF_HORIZONTAL_ALIGN_RIGHT)
+        DEFINE_NEW_ALIGNMENT(NONE,   TTF_HORIZONTAL_ALIGN_INVALID)
+        #undef DEFINE_NEW_ALIGNMENT
+    }
 
-        SDL_RectWrapper(const RR&);
-        void destroy();
-        ~SDL_RectWrapper();
-        RR* operator&(void) noexcept;
+    using Weight = uint32_t;
+    enum class Weights : WSDC::Text::Weight {
+        THIN      = TTF_FONT_WEIGHT_THIN,
+        LIGHTER   = TTF_FONT_WEIGHT_EXTRA_LIGHT,
+        LIGHT     = TTF_FONT_WEIGHT_LIGHT,
+        NORMAL    = TTF_FONT_WEIGHT_NORMAL,
+        MEDIUM    = TTF_FONT_WEIGHT_MEDIUM,
+        SEMI_BOLD = TTF_FONT_WEIGHT_SEMI_BOLD,
+        BOLD      = TTF_FONT_WEIGHT_BOLD,
+        BOLDER    = TTF_FONT_WEIGHT_EXTRA_BOLD,
+        EXTRA     = TTF_FONT_WEIGHT_BLACK,
+        GIGA      = TTF_FONT_WEIGHT_EXTRA_BLACK
     };
 
-    template <typename T>
-    struct Rect {
-        T x, y, w, h, &horizontal=x, &vertical=y, &width=w, &height=h;
+    using Style = TTF_FontStyleFlags;
+    enum class Styles : WSDC::Text::Weight {
+        NORMAL    = TTF_STYLE_NORMAL,
+        BOLD      = TTF_STYLE_BOLD,
+        ITALIC    = TTF_STYLE_ITALIC,
+        UNDERLINE = TTF_STYLE_UNDERLINE,
+        STRIKE    = TTF_STYLE_STRIKETHROUGH
+    };
 
-        template<typename S> WSDC::Geo::SDL_RectWrapper<S> get(void) const;
-        template<typename S> operator S() const;
-        template<typename Float_t> WSDC::Geo::Rect<T>& scale(const Float_t& sc) noexcept;
+    struct FontStyle {
+        float size;
+        WSDC::Text::Weights weight;
+        WSDC::Text::Styles style;
+        WSDC::Text::Alignment align;
+        WSDC::Core::Color color;
+
+        FontStyle();
+
+        // cache comparison
+        bool operator==(const FontStyle&) const;
+        bool operator!=(const FontStyle&) const;
+        
+        // Helper
+        static FontStyle withSize(float s);
+        static FontStyle withColor(const WSDC::Core::Color&);
+        static FontStyle withWeight(const WSDC::Text::Weights&);
+        
+        // Preset styles
+        static FontStyle heading();
+        static FontStyle subheading();
+        static FontStyle body();
+        static FontStyle small();
+        
+        // chaining
+        FontStyle& setSize(float s);
+        FontStyle& setColor(const WSDC::Core::Color&);
+        FontStyle& setWeight(const WSDC::Text::Weights&);
+        FontStyle& setStyle(const WSDC::Text::Styles&);
+        FontStyle& setAlign(const WSDC::Text::Alignment&);
+    };
+
+    struct CachedText {
+        SDL_Surface* surface;
+        SDL_Texture* texture;
+        SDL_Renderer* renderer;
+        std::string text;
+        WSDC::Text::FontStyle style;
+        int actual_width;
+        int actual_height;
+        
+        CachedText();
+        ~CachedText();
+        void clear();
+        bool matches(const std::string&, const WSDC::Text::FontStyle&, SDL_Renderer*) const;
+    };
+
+    class Font {
+        TTF_Font* raw = nullptr;
+        std::string _filepath;
+        WSDC::Text::FontStyle _style;
+        
+        mutable WSDC::Text::CachedText cache;
+
+        void prepareContext(SDL_Renderer*&, SDL_Surface*&, SDL_Texture*&, const std::string&, int&, int&);
+        void clearCache();
+        void applyStyesToFont();
+
+    public:
+        friend class WSDC::Entity::Button;
+        
+        Font(void);
+        ~Font(void);
+
+        WSDC::Text::Font& close(void);
+        WSDC::Text::Font& unload(void);
+
+        WSDC::Text::Font& color(const WSDC::Core::Color&);
+        WSDC::Core::Color& color(void);
+
+        WSDC::Text::Font& size(const float& size);
+        float& size(void);
+
+        WSDC::Text::Font& weight(const WSDC::Text::Weights&);
+        WSDC::Text::Weights& weight(void);
+
+        WSDC::Text::Font& style(const WSDC::Text::Styles&);
+        WSDC::Text::Styles& style(void);
+
+        WSDC::Text::Font& align(const WSDC::Text::Alignment&);
+
+        WSDC::Text::Font& load(const std::string&);
+        std::string& filepath(void);
+
+        WSDC::Text::Font& styles(const WSDC::Text::FontStyle&);
+        WSDC::Text::FontStyle& styles(void);
+
+        [[maybe_unused]] SDL_FRect write(SDL_Renderer*, const WSDC::Core::Position<float>&, const std::string&);
+        template<typename... Args> [[maybe_unused]] SDL_FRect write(SDL_Renderer*, const WSDC::Core::Position<float>&, const std::string&, Args...);
+        
+        // Get text dimensions without rendering
+        SDL_FRect measureText(const std::string&);
+        
+        // Get font height
+        int getHeight() const;
+        
+        // Get font ascent
+        int getAscent() const;
+        
+        // Get font descent
+        int getDescent() const;
+        
+        // Check if font is loaded
+        bool isLoaded() const;
+        
+        // Force cache clear
+        WSDC::Text::Font& invalidateCache();
+    };
+
+    struct TTF_Quitter {
+        ~TTF_Quitter();
     };
 }
 
-namespace Math {
-    template<typename T, typename I> constexpr T findD(I, I, I) noexcept;
+namespace Managers {
+    class Events {
+        uint32_t mouse_flags    = 0, window_flags  = 0, system_flags    = 0, display_flags = 0,
+                 keyboard_flags = 0, gamepad_flags = 0, joystick_flags  = 0, touch_flags   = 0,
+                 pen_flags      = 0, audio_flags   = 0, camera_flags    = 0, sensor_flags  = 0,
+                 render_flags   = 0, drop_flags    = 0, clipboard_flags = 0, user_flags    = 0;
+        
+        // Keyboard state
+        const bool* key_states = nullptr;
+        std::unordered_set<SDL_Scancode> keys_pressed_this_frame;
+        std::unordered_set<SDL_Scancode> keys_released_this_frame;
+        
+        // Mouse state
+        float mouse_x = 0, mouse_y = 0;
+        float mouse_dx = 0, mouse_dy = 0;
+        float wheel_x = 0, wheel_y = 0;
+        uint32_t mouse_button_state = 0;
+        
+        // Window state
+        int window_width = 0, window_height = 0;
+        SDL_WindowID window_id = 0;
+        
+        // Display state
+        SDL_DisplayID display_id = 0;
+        SDL_DisplayOrientation display_orientation = SDL_ORIENTATION_UNKNOWN;
+        
+        // Gamepad state
+        std::unordered_map<SDL_JoystickID, SDL_GamepadAxis> gamepad_axes;
+        std::unordered_map<SDL_JoystickID, SDL_GamepadButton> gamepad_buttons;
+        std::unordered_set<SDL_JoystickID> active_gamepads;
+        
+        // Joystick state
+        std::unordered_map<SDL_JoystickID, int> joystick_axes;
+        std::unordered_map<SDL_JoystickID, int> joystick_buttons;
+        std::unordered_set<SDL_JoystickID> active_joysticks;
+        
+        // Touch state
+        std::unordered_map<SDL_FingerID, WSDC::Event::TouchFinger> touch_fingers;
+        
+        // Pen state
+        float pen_x = 0, pen_y = 0;
+        float pen_pressure = 0;
+        float pen_tilt_x = 0, pen_tilt_y = 0;
+        SDL_PenID pen_id = 0;
+        
+        // Text input
+        std::string text_input;
+        std::string text_editing;
+        
+        // Drop state
+        std::vector<std::string> dropped_files;
+        std::string dropped_text;
+        float drop_x = 0, drop_y = 0;
+        
+        // Sensor state
+        std::vector<float> sensor_data;
+        
+        // Audio state
+        SDL_AudioDeviceID audio_device_id = 0;
+        
+        // Camera state
+        SDL_CameraID camera_device_id = 0;
+        
+        // User event state
+        void* user_data1 = nullptr;
+        void* user_data2 = nullptr;
+        int32_t user_code = 0;
+
+    public:
+        WSDC::Managers::Events& update();
+        
+        // Operator overloads for flag checking
+        bool operator&(WSDC::Event::Mouse) const;
+        bool operator&(WSDC::Event::Window) const;
+        bool operator&(WSDC::Event::System) const;
+        bool operator&(WSDC::Event::Display) const;
+        bool operator&(WSDC::Event::Keyboard) const;
+        bool operator&(WSDC::Event::Gamepad) const;
+        bool operator&(WSDC::Event::Joystick) const;
+        bool operator&(WSDC::Event::Touch) const;
+        bool operator&(WSDC::Event::Pen) const;
+        bool operator&(WSDC::Event::Audio) const;
+        bool operator&(WSDC::Event::Camera) const;
+        bool operator&(WSDC::Event::Sensor) const;
+        bool operator&(WSDC::Event::Render) const;
+        bool operator&(WSDC::Event::Drop) const;
+        bool operator&(WSDC::Event::Clipboard) const;
+        bool operator&(WSDC::Event::User) const;
+        template <class EV> bool isEvent(EV);
+        
+        // Keyboard queries
+        bool isKeyHeld(SDL_Scancode sc) const;
+        bool isKeyPressed(SDL_Scancode sc) const;
+        bool isKeyReleased(SDL_Scancode sc) const;
+        
+        // Mouse state
+        float mouseX() const;
+        float mouseY() const;
+        WSDC::Core::Position<float> mouse() const;
+        float mouseDX() const;
+        float mouseDY() const;
+        WSDC::Core::Position<float> mouseDelta() const;
+        float wheelX() const;
+        float wheelY() const;
+        WSDC::Core::Position<float> wheel() const;
+        uint32_t mouseButtonState() const;
+        
+        // Window state
+        int windowWidth() const;
+        int windowHeight() const;
+        WSDC::Core::Size<int> window() const;
+        SDL_WindowID windowID() const;
+        
+        // Display state
+        SDL_DisplayID displayID() const;
+        SDL_DisplayOrientation displayOrientation() const;
+        
+        // Text input
+        const std::string& textInput() const;
+        const std::string& textEditing() const;
+        
+        // Touch state
+        const std::unordered_map<SDL_FingerID, WSDC::Event::TouchFinger>& touchFingers() const;
+        
+        // Pen state
+        float penX() const;
+        float penY() const;
+        WSDC::Core::Position<float> pen() const;
+        float penPressure() const;
+        float penTiltX() const;
+        float penTiltY() const;
+        WSDC::Core::Position<float> penTilt() const;
+        SDL_PenID penID() const;
+        
+        // Gamepad state
+        const std::unordered_set<SDL_JoystickID>& activeGamepads() const;
+        
+        // Joystick state
+        const std::unordered_set<SDL_JoystickID>& activeJoysticks() const;
+        
+        // Drop state
+        const std::vector<std::string>& droppedFiles() const;
+        const std::string& droppedText() const;
+        float dropX() const;
+        float dropY() const;
+        WSDC::Core::Position<float> drop() const;
+        
+        // Sensor state
+        const std::vector<float>& sensorData() const;
+        
+        // Audio state
+        SDL_AudioDeviceID audioDeviceID() const;
+        
+        // Camera state
+        SDL_CameraID cameraDeviceID() const;
+        
+        // User event state
+        void* userData1() const;
+        void* userData2() const;
+        int32_t userCode() const;
+    };
+
+    template <class... Others>
+    class Scene {
+        using scene_raw_t = std::function<void(WSDC::Display::Window&, WSDC::Managers::Events&, Others&...)>;
+        scene_raw_t scene;
+
+    public:
+        Scene(const scene_raw_t&);
+        Scene() = default;
+        ~Scene() = default;
+
+        scene_raw_t& get();
+        scene_raw_t& operator*(void);
+
+        Scene& run(WSDC::Display::Window&, WSDC::Managers::Events&, Others&...);
+
+        Scene& operator=(const scene_raw_t&);
+    };
+
+    template <class Key=std::string, class... ExtraData>
+    class SceneManager {
+        using sig_function_t = std::function<void(WSDC::Display::Window&, ExtraData&...)>;
+        using SceneW = WSDC::Managers::Scene<ExtraData&...>;
+        using ExtraDataTuple = std::tuple<ExtraData*...>;
+
+        std::map<Key, SceneW> scenes;
+        std::map<Key, sig_function_t> on_change;
+
+        SceneW* current_scene;
+        WSDC::Display::Window* current_window;
+        WSDC::Managers::Events* current_events;
+        ExtraDataTuple current_outdata;
+
+    public:
+        SceneManager() : current_scene(nullptr), current_window(nullptr), 
+                        current_events(nullptr), current_outdata() {}
+        ~SceneManager() {}
+
+        SceneW& createScene(const Key&, const bool&);
+        SceneW& createScene(const Key&);
+        SceneW& scene(const Key&);
+        SceneW& createSceneWithSignal(const Key&, const bool&, const sig_function_t&);
+        SceneW& createSceneWithSignal(const Key&, const sig_function_t&);
+        SceneW& sceneWithSignal(const Key&, const bool&, const sig_function_t&);
+        
+        SceneManager<Key, ExtraData...>& extra(ExtraData&...);
+        SceneManager<Key, ExtraData...>& window(WSDC::Display::Window&);
+        SceneManager<Key, ExtraData...>& events(WSDC::Managers::Events&);
+        
+        void changeTo(const Key&);
+        sig_function_t& onChangeTo(const Key&);
+
+        SceneManager<Key, ExtraData...>& run();
+
+    private:
+        template<std::size_t... Is>
+        void callOnChange(const Key& key, std::index_sequence<Is...>) {
+            on_change[key](*current_window, *std::get<Is>(current_outdata)...);
+        }
+
+        template<std::size_t... Is>
+        void callSceneRun(std::index_sequence<Is...>) {
+            current_scene->run(*current_window, *current_events, *std::get<Is>(current_outdata)...);
+        }
+    };
+
+    class TextRenderer {
+        std::unordered_map<std::string, WSDC::Text::Font> fonts;
+        SDL_Renderer* _renderer;
+        
+    public:
+        TextRenderer& renderer(SDL_Renderer*&);
+        WSDC::Text::Font& operator[](const std::string&);
+        [[maybe_unused]] SDL_FRect write(const std::string&, const WSDC::Core::Position<float>&, const std::string&);
+        template<typename... Args> [[maybe_unused]] SDL_FRect write(const std::string& f, const WSDC::Core::Position<float>&, const std::string&, Args...);
+    };
+}
+
+namespace Entity {
+    class Button : public WSDC::Geo::Rect<float> {
+        bool _use_text, _use_bg_image, _is_in_area,
+             _last_check, _last_click_state;
+        WSDC::Core::Color _bg, _fg;
+        WSDC::Text::Font* _font;
+        WSDC::Draw::Image* _img;
+        SDL_FRect _prect;
+
+    public:
+        std::function<void(void)> onClick, onRelease, onHover, onLeave;
+
+        Button();
+        ~Button();
+
+        WSDC::Entity::Button& set(const WSDC::Geo::Rect<float>&);
+        WSDC::Entity::Button& useText(const bool&) noexcept;
+        WSDC::Entity::Button& useImg(const bool&) noexcept;
+        WSDC::Entity::Button& font(WSDC::Text::Font&) noexcept;
+        WSDC::Entity::Button& font(WSDC::Text::Font*&) noexcept;
+
+        WSDC::Draw::Image& img(const std::string&) noexcept;
+        WSDC::Draw::Image& img();
+
+        WSDC::Core::Color& bg() noexcept;
+        WSDC::Entity::Button& bg(const WSDC::Core::Color&) noexcept;
+
+        WSDC::Core::Color& fg() noexcept;
+        WSDC::Entity::Button& fg(const WSDC::Core::Color&) noexcept;
+
+        bool isAlignedHorizontal(const SDL_FRect&) noexcept;
+        bool isAlignedVertical(const SDL_FRect&) noexcept;
+        bool isInArea(const SDL_FRect&) noexcept;
+
+        void check(const WSDC::Core::Position<float>, const bool&);
+
+        void render(SDL_Renderer*&, const std::string&);
+    };
+}
+
+namespace Format {
+    template<std::size_t, typename... Ts> std::variant<Ts...> tuple_runtime_get(std::size_t, const std::tuple<Ts...>&);
+    template<typename T> constexpr std::string to_string_any(const T&);
+    template<typename... Types> constexpr std::string format(const std::string&, const Types&...);
+    inline std::string format(const std::string&) noexcept;
+    template<typename... Args> void format_p(std::string&, Args...);
+}
+
+namespace Log {
+    using Style = uint8_t;
+    namespace Styles {}
+
+    struct TextStyle {
+        WSDC::Core::Color  *fg = nullptr,
+                           *bg = nullptr;
+        WSDC::Log::Style style = 0;
+        
+        bool has(const WSDC::Log::Style& s) const;
+    };
+
+    std::string style_to_esc(const WSDC::Log::TextStyle&);
+    inline std::string toLink(const std::string&);
+    inline std::string toLink(const std::string&, const std::string&);
+    inline std::string toLink(WSDC::Log::TextStyle&&, const std::string&, const std::string&);
+    inline std::string toLink(WSDC::Log::TextStyle&&, const std::string&);
+    void print(const std::string&);
+    void println(const std::string&);
+    void print(WSDC::Log::TextStyle&&, const std::string&);
+    void println(TextStyle&&, const std::string&);
+    template<typename... Args> void print(TextStyle&&, const std::string&, Args...);
+    template<typename... Args> void println(TextStyle&&, const std::string&, Args...);
+    template<typename... Args> void print(const std::string&, Args...);
+    template<typename... Args> void println(const std::string&, Args...);
+    void setPointerPosition(const int32_t&, const int32_t&);
+    void setPointerPosition(const WSDC::Core::Position<int32_t>&);
+    void clear();
 }
 
 template <class Key=std::string, class... ExtraData>
@@ -1050,7 +1158,7 @@ struct Engine {
     bool use_onEvents = true;
     Uint64 FPS = 16; // ~60
     Uint64 last_frame_time = 0;
-    SubWindows sub_windows;
+    WSDC::Display::SubWindows sub_windows;
     Manager manager;
     WSDC::Managers::Events events;
     std::atomic_bool is_running;
@@ -1227,37 +1335,3 @@ protected:
 };
 
 } // WSDC
-
-// Bitwise operators for all flag enums
-#define DEFINE_FLAG_OPERATORS(EnumType) \
-inline EnumType operator|(EnumType a, EnumType b) noexcept { \
-    return static_cast<EnumType>(static_cast<WSDC::Event::flag_t>(a) | static_cast<WSDC::Event::flag_t>(b)); \
-} \
-inline EnumType operator&(EnumType a, EnumType b) noexcept { \
-    return static_cast<EnumType>(static_cast<WSDC::Event::flag_t>(a) & static_cast<WSDC::Event::flag_t>(b)); \
-} \
-inline EnumType& operator|=(EnumType& a, EnumType b) noexcept { \
-    return a = a | b; \
-} \
-inline EnumType& operator&=(EnumType& a, EnumType b) noexcept { \
-    return a = a & b; \
-}
-
-DEFINE_FLAG_OPERATORS(WSDC::Event::Mouse)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Window)
-DEFINE_FLAG_OPERATORS(WSDC::Event::System)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Display)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Keyboard)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Gamepad)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Joystick)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Touch)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Pen)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Audio)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Camera)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Sensor)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Render)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Drop)
-DEFINE_FLAG_OPERATORS(WSDC::Event::Clipboard)
-DEFINE_FLAG_OPERATORS(WSDC::Event::User)
-
-#undef DEFINE_FLAG_OPERATORS
